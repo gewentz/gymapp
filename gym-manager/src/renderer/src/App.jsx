@@ -15,11 +15,11 @@ function App() {
 
   return (
     <Router>
-      <div className="min-h-screen w-full bg-stone-100">
+      <div
+        className={`min-h-screen w-screen text-gray-300 ${isSidebarCollapsed ? 'ml-[100px]' : 'ml-[500px]'}`}
+      >
         <Sidebar isCollapsed={isSidebarCollapsed} onToggle={handleSidebarToggle} />
-        <main
-          className={`flex-1 transition-all duration-300 ${isSidebarCollapsed ? 'ml-16' : 'ml-64'}`}
-        >
+        <main className={`flex-1 transition-all duration-300 `}>
           <div className="p-6">
             <Routes>
               <Route path="/" element={<Dashboard />} />
