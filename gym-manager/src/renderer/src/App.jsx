@@ -6,6 +6,7 @@ import Alunos from './pages/alunos'
 import CalendarioDnd from './pages/calendarioDnd'
 import Financeiro from './pages/financeiro'
 import Sidebar from './components/Sidebar'
+import Historico from './pages/historico'
 
 // Componente para as rotas animadas
 function AnimatedRoutes() {
@@ -48,6 +49,7 @@ function AnimatedRoutes() {
           <Route path="/alunos" element={<Alunos />} />
           <Route path="/calendario-dnd" element={<CalendarioDnd />} />
           <Route path="/financeiro" element={<Financeiro />} />
+          <Route path="/historico" element={<Historico />} />
         </Routes>
       </motion.div>
     </AnimatePresence>

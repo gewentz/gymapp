@@ -68,6 +68,19 @@ function Sidebar({ isCollapsed, onToggle }) {
               {!isCollapsed && <span className="truncate">Financeiro</span>}
             </NavLink>
           </li>
+          <li className="mb-1">
+            <NavLink
+              to="/historico"
+              className={({ isActive }) =>
+                `flex items-center px-4 py-3 transition-colors ${
+                  isActive ? 'bg-lime-600 text-white' : 'text-stone-300 hover:bg-stone-700'
+                }`
+              }
+            >
+              <span className="text-xl mr-3">📈</span>
+              {!isCollapsed && <span className="truncate">Histórico</span>}
+            </NavLink>
+          </li>
         </ul>
       </nav>
       <div className="w-full p-4 border-t border-stone-700">
