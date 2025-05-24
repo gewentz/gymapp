@@ -47,7 +47,7 @@ function Modal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900 bg-opacity-50 transition-opacity duration-300"
+      className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm transition-opacity duration-300"
       onClick={handleBackdropClick}
       aria-modal="true"
       role="dialog"
@@ -61,7 +61,7 @@ function Modal({
           <h3 className="text-xl font-bold">{title}</h3>
           <button
             onClick={onClose}
-            className="text-stone-300 hover:text-white transition-colors focus:outline-none"
+            className="text-stone-300 hover:text-red-500 transition-colors focus:outline-none"
             aria-label="Fechar"
           >
             <svg
