@@ -65,13 +65,13 @@ function Card({ aluno, onEdit = null }) {
             {aluno.diasTreino && aluno.diasTreino.length > 0 ? (
               aluno.diasTreino.map((dia) => {
                 const diasAbrev = {
-                  segunda: 'S',
-                  terca: 'T',
-                  quarta: 'Q',
-                  quinta: 'Q',
-                  sexta: 'S',
-                  sabado: 'S',
-                  domingo: 'D'
+                  segunda: 'Seg',
+                  terca: 'Ter',
+                  quarta: 'Qua',
+                  quinta: 'Qui',
+                  sexta: 'Sex',
+                  sabado: 'Sáb',
+                  domingo: 'Dom'
                 }
 
                 return (
