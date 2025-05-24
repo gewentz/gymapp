@@ -1,6 +1,5 @@
 function Card({ aluno, onEdit = null }) {
   const getStatusColor = (status) => {
-    console.log('Data no Card:', aluno.nascimento, 'Tipo:', typeof aluno.nascimento)
     return status === 'Ativo' ? 'text-green-400' : 'text-red-400'
   }
 
@@ -27,6 +26,19 @@ function Card({ aluno, onEdit = null }) {
     }
 
     return idade
+  }
+
+  const formatarDiaAbreviado = (dia) => {
+    const diasAbrev = {
+      segunda: 'Seg',
+      terca: 'Ter',
+      quarta: 'Qua',
+      quinta: 'Qui',
+      sexta: 'Sex',
+      sabado: 'Sáb',
+      domingo: 'Dom'
+    }
+    return diasAbrev[dia] || dia
   }
 
   return (
@@ -57,36 +69,53 @@ function Card({ aluno, onEdit = null }) {
         </p>
       </div>
 
-      <div className="flex justify-between items-center">
-        {/* Dias de treino */}
-        <div className="flex flex-col">
-          <span className="text-xs text-gray-400 mb-1">Dias de Treino:</span>
-          <div className="flex gap-1">
-            {aluno.diasTreino && aluno.diasTreino.length > 0 ? (
-              aluno.diasTreino.map((dia) => {
-                const diasAbrev = {
-                  segunda: 'Seg',
-                  terca: 'Ter',
-                  quarta: 'Qua',
-                  quinta: 'Qui',
-                  sexta: 'Sex',
-                  sabado: 'Sáb',
-                  domingo: 'Dom'
-                }
-
-                return (
-                  <span
-                    key={dia}
-                    className="w-6 h-6 bg-lime-600 text-white text-xs rounded-full flex items-center justify-center font-medium"
-                  >
-                    {diasAbrev[dia]}
-                  </span>
-                )
+      {/* Horários de Treino */}
+      <div className="mb-4">
+        <span className="text-xs text-gray-400 mb-2 block">Horários de Treino:</span>
+        {aluno.horariosTreino && aluno.horariosTreino.length > 0 ? (
+          <div className="space-y-1">
+            {aluno.horariosTreino
+              .sort((a, b) => {
+                const ordem = ['segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado', 'domingo']
+                return ordem.indexOf(a.dia) - ordem.indexOf(b.dia)
               })
-            ) : (
-              <span className="text-xs text-gray-500">Nenhum</span>
-            )}
+              .map((horario, index) => (
+                <div
+                  key={index}
+                  className="flex justify-between items-center bg-stone-700 rounded px-2 py-1"
+                >
+                  <span className="text-xs text-gray-300">{formatarDiaAbreviado(horario.dia)}</span>
+                  <span className="text-xs text-lime-400 font-medium">{horario.horario}</span>
+                </div>
+              ))}
           </div>
+        ) : (
+          <div className="text-xs text-gray-500 italic">Nenhum horário definido</div>
+        )}
+      </div>
+
+      {/* Dias de treino (visual alternativo - badges) */}
+      <div className="mb-4">
+        <span className="text-xs text-gray-400 mb-2 block">Dias de Treino:</span>
+        <div className="flex flex-wrap gap-1">
+          {aluno.diasTreino && aluno.diasTreino.length > 0 ? (
+            aluno.diasTreino.map((dia) => (
+              <span
+                key={dia}
+                className="px-2 py-1 bg-lime-600 text-white text-xs rounded-full font-medium"
+              >
+                {formatarDiaAbreviado(dia)}
+              </span>
+            ))
+          ) : (
+            <span className="text-xs text-gray-500">Nenhum</span>
+          )}
+        </div>
+      </div>
+
+      <div className="flex justify-between items-center">
+        <div className="text-xs text-gray-400">
+          {aluno.horariosTreino?.length || 0} horário(s) definido(s)
         </div>
 
         <div className="flex gap-2">

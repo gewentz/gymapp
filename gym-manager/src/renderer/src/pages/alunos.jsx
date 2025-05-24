@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import Card from '../components/Card'
 import Modal from '../components/Modal'
-import { data } from 'react-router-dom'
 
 function Alunos() {
   // Dados mockados dos alunos
@@ -9,60 +8,93 @@ function Alunos() {
     {
       id: 1,
       nome: 'João Silva',
-      nascimento: '1995-09-25', // String no formato YYYY-MM-DD
+      nascimento: '1995-09-25',
       telefone: '(11) 99999-9999',
       email: 'joao@email.com',
       diasTreino: ['segunda', 'quarta', 'sexta'],
+      horariosTreino: [
+        { dia: 'segunda', horario: '08:00' },
+        { dia: 'quarta', horario: '08:00' },
+        { dia: 'sexta', horario: '08:00' }
+      ],
       status: 'Ativo',
       dataMatricula: '2024-01-15'
     },
     {
       id: 2,
       nome: 'Maria Santos',
-      nascimento: '1990-05-30', // String no formato YYYY-MM-DD
+      nascimento: '1990-05-30',
       telefone: '(11) 88888-8888',
       email: 'maria@email.com',
       diasTreino: ['terca', 'quinta'],
+      horariosTreino: [
+        { dia: 'terca', horario: '09:00' },
+        { dia: 'quinta', horario: '09:00' }
+      ],
       status: 'Ativo',
       dataMatricula: '2024-02-10'
     },
     {
       id: 3,
       nome: 'Pedro Oliveira',
-      nascimento: '1998-11-15', // String no formato YYYY-MM-DD
+      nascimento: '1998-11-15',
       telefone: '(11) 77777-7777',
       email: 'pedro@email.com',
       diasTreino: ['segunda', 'terca', 'quarta', 'quinta', 'sexta'],
+      horariosTreino: [
+        { dia: 'segunda', horario: '10:00' },
+        { dia: 'terca', horario: '10:00' },
+        { dia: 'quarta', horario: '10:00' },
+        { dia: 'quinta', horario: '10:00' },
+        { dia: 'sexta', horario: '10:00' }
+      ],
       status: 'Inativo',
       dataMatricula: '2023-12-05'
     },
     {
       id: 4,
       nome: 'Ana Costa',
-      nascimento: '1992-08-22', // Corrigir de 1993 para '1992-08-22'
+      nascimento: '1992-08-22',
       telefone: '(11) 66666-6666',
       email: 'ana@email.com',
       diasTreino: ['segunda', 'quarta', 'sexta', 'sabado'],
+      horariosTreino: [
+        { dia: 'segunda', horario: '14:00' },
+        { dia: 'quarta', horario: '14:00' },
+        { dia: 'sexta', horario: '14:00' },
+        { dia: 'sabado', horario: '14:00' }
+      ],
       status: 'Ativo',
       dataMatricula: '2024-03-01'
     },
     {
       id: 5,
       nome: 'Carlos Ferreira',
-      nascimento: '1985-12-10', // String no formato YYYY-MM-DD
+      nascimento: '1985-12-10',
       telefone: '(11) 55555-5555',
       email: 'carlos@email.com',
       diasTreino: ['terca', 'quinta', 'sabado'],
+      horariosTreino: [
+        { dia: 'terca', horario: '16:00' },
+        { dia: 'quinta', horario: '16:00' },
+        { dia: 'sabado', horario: '16:00' }
+      ],
       status: 'Ativo',
       dataMatricula: '2024-01-20'
     },
     {
       id: 6,
       nome: 'Lucia Mendes',
-      nascimento: '1993-07-18', // String no formato YYYY-MM-DD
+      nascimento: '1993-07-18',
       telefone: '(11) 44444-4444',
       email: 'lucia@email.com',
       diasTreino: ['segunda', 'quarta', 'sexta', 'domingo'],
+      horariosTreino: [
+        { dia: 'segunda', horario: '18:00' },
+        { dia: 'quarta', horario: '18:00' },
+        { dia: 'sexta', horario: '18:00' },
+        { dia: 'domingo', horario: '18:00' }
+      ],
       status: 'Ativo',
       dataMatricula: '2024-02-28'
     }
@@ -80,8 +112,18 @@ function Alunos() {
     telefone: '',
     email: '',
     diasTreino: [],
+    horariosTreino: [],
     status: 'Ativo'
   })
+
+  // Horários disponíveis
+  const horariosDisponiveis = []
+  for (let hora = 6; hora <= 22; hora++) {
+    horariosDisponiveis.push(`${hora.toString().padStart(2, '0')}:00`)
+    if (hora < 22) {
+      horariosDisponiveis.push(`${hora.toString().padStart(2, '0')}:30`)
+    }
+  }
 
   // Função para calcular a idade
   const calcularIdade = (dataNascimento) => {
@@ -116,7 +158,6 @@ function Alunos() {
   // Função para lidar com mudanças no formulário
   const handleInputChange = (e) => {
     const { name, value } = e.target
-    console.log(`Campo ${name} alterado para:`, value) // Debug
     setFormData((prev) => ({
       ...prev,
       [name]: value
@@ -125,11 +166,38 @@ function Alunos() {
 
   // Função para lidar com mudanças nos checkboxes dos dias
   const handleDiaChange = (dia) => {
-    setFormData((prev) => ({
-      ...prev,
-      diasTreino: prev.diasTreino.includes(dia)
+    setFormData((prev) => {
+      const novosDiasTreino = prev.diasTreino.includes(dia)
         ? prev.diasTreino.filter((d) => d !== dia)
         : [...prev.diasTreino, dia]
+
+      // Atualizar horários de treino - remover horários de dias desmarcados
+      const novosHorariosTreino = prev.horariosTreino.filter((h) => novosDiasTreino.includes(h.dia))
+
+      // Adicionar horário padrão para novos dias (08:00)
+      const diasSemHorario = novosDiasTreino.filter(
+        (d) => !novosHorariosTreino.some((h) => h.dia === d)
+      )
+
+      diasSemHorario.forEach((dia) => {
+        novosHorariosTreino.push({ dia, horario: '08:00' })
+      })
+
+      return {
+        ...prev,
+        diasTreino: novosDiasTreino,
+        horariosTreino: novosHorariosTreino
+      }
+    })
+  }
+
+  // Função para alterar horário de um dia específico
+  const handleHorarioChange = (dia, novoHorario) => {
+    setFormData((prev) => ({
+      ...prev,
+      horariosTreino: prev.horariosTreino.map((h) =>
+        h.dia === dia ? { ...h, horario: novoHorario } : h
+      )
     }))
   }
 
@@ -138,10 +206,11 @@ function Alunos() {
     setEditingAluno(null)
     setFormData({
       nome: '',
-      nascimento: Date(),
+      nascimento: '',
       telefone: '',
       email: '',
       diasTreino: [],
+      horariosTreino: [],
       status: 'Ativo'
     })
     setIsModalOpen(true)
@@ -149,9 +218,6 @@ function Alunos() {
 
   // Função para abrir modal de edição
   const handleEditarAluno = (aluno) => {
-    console.log('Aluno selecionado:', aluno) // Debug
-    console.log('Data de nascimento:', aluno.nascimento) // Debug
-
     setEditingAluno(aluno)
     setFormData({
       nome: aluno.nome,
@@ -159,6 +225,7 @@ function Alunos() {
       telefone: aluno.telefone,
       email: aluno.email,
       diasTreino: [...aluno.diasTreino],
+      horariosTreino: [...(aluno.horariosTreino || [])],
       status: aluno.status
     })
     setIsModalOpen(true)
@@ -172,16 +239,12 @@ function Alunos() {
       return
     }
 
-    console.log('FormData antes de salvar:', formData) // Debug
-
     if (editingAluno) {
       // Editando aluno existente
       const alunoAtualizado = {
         ...editingAluno,
         ...formData
       }
-
-      console.log('Aluno atualizado:', alunoAtualizado) // Debug
 
       setAlunos((prev) =>
         prev.map((aluno) => (aluno.id === editingAluno.id ? alunoAtualizado : aluno))
@@ -209,6 +272,7 @@ function Alunos() {
       telefone: '',
       email: '',
       diasTreino: [],
+      horariosTreino: [],
       status: 'Ativo'
     })
     setEditingAluno(null)
@@ -276,7 +340,7 @@ function Alunos() {
         isOpen={isModalOpen}
         onClose={handleCancel}
         title={editingAluno ? 'Editar Aluno' : 'Cadastrar Novo Aluno'}
-        size="lg"
+        size="xl"
         footer={
           <>
             <Modal.Button variant="outline" onClick={handleCancel}>
@@ -288,7 +352,7 @@ function Alunos() {
           </>
         }
       >
-        <form className="space-y-4">
+        <form className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Nome */}
             <div>
@@ -365,46 +429,63 @@ function Alunos() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Dias de treino */}
-            <div>
-              <label className="block text-sm font-medium text-stone-700 mb-2">
-                Dias de Treino
-              </label>
-              <div className="grid grid-cols-7 gap-2">
-                {[
-                  { key: 'segunda', label: 'Seg', full: 'Segunda' },
-                  { key: 'terca', label: 'Ter', full: 'Terça' },
-                  { key: 'quarta', label: 'Qua', full: 'Quarta' },
-                  { key: 'quinta', label: 'Qui', full: 'Quinta' },
-                  { key: 'sexta', label: 'Sex', full: 'Sexta' },
-                  { key: 'sabado', label: 'Sab', full: 'Sábado' },
-                  { key: 'domingo', label: 'Dom', full: 'Domingo' }
-                ].map((dia) => (
-                  <div key={dia.key} className="flex flex-col items-center">
-                    <label
-                      htmlFor={dia.key}
-                      className={`w-10 h-10 flex items-center justify-center rounded-md border-2 cursor-pointer transition-colors ${
-                        formData.diasTreino.includes(dia.key)
-                          ? 'bg-lime-500 border-lime-500 text-white'
-                          : 'bg-white border-stone-300 text-stone-700 hover:border-lime-400'
-                      }`}
-                    >
+          {/* Dias e Horários de Treino */}
+          <div>
+            <label className="block text-sm font-medium text-stone-700 mb-3">
+              Dias e Horários de Treino
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[
+                { key: 'segunda', label: 'Segunda-feira' },
+                { key: 'terca', label: 'Terça-feira' },
+                { key: 'quarta', label: 'Quarta-feira' },
+                { key: 'quinta', label: 'Quinta-feira' },
+                { key: 'sexta', label: 'Sexta-feira' },
+                { key: 'sabado', label: 'Sábado' },
+                { key: 'domingo', label: 'Domingo' }
+              ].map((dia) => {
+                const isSelected = formData.diasTreino.includes(dia.key)
+                const horarioAtual =
+                  formData.horariosTreino.find((h) => h.dia === dia.key)?.horario || '08:00'
+
+                return (
+                  <div key={dia.key} className="border border-stone-300 rounded-lg p-3">
+                    <div className="flex items-center mb-2">
                       <input
                         type="checkbox"
                         id={dia.key}
-                        checked={formData.diasTreino.includes(dia.key)}
+                        checked={isSelected}
                         onChange={() => handleDiaChange(dia.key)}
-                        className="sr-only"
+                        className="mr-2 w-4 h-4 text-lime-600 bg-gray-100 border-gray-300 rounded focus:ring-lime-500"
                       />
-                      {dia.label}
-                    </label>
-                    <span className="text-xs text-stone-600 mt-1">{dia.full}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+                      <label htmlFor={dia.key} className="text-sm font-medium text-stone-700">
+                        {dia.label}
+                      </label>
+                    </div>
 
+                    {isSelected && (
+                      <div>
+                        <label className="block text-xs text-stone-600 mb-1">Horário:</label>
+                        <select
+                          value={horarioAtual}
+                          onChange={(e) => handleHorarioChange(dia.key, e.target.value)}
+                          className="w-full px-2 py-1 text-xs border border-stone-300 text-stone-700 rounded focus:outline-none focus:ring-1 focus:ring-lime-500"
+                        >
+                          {horariosDisponiveis.map((horario) => (
+                            <option key={horario} value={horario}>
+                              {horario}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Status */}
             <div>
               <label htmlFor="status" className="block text-sm font-medium text-stone-700 mb-1">
