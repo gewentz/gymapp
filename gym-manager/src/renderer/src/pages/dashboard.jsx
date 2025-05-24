@@ -49,21 +49,21 @@ function Dashboard() {
         id: 2,
         aluno: 'Maria Santos',
         valor: 150.0,
-        dataVencimento: '2024-12-19',
+        dataVencimento: '2025-05-27',
         status: 'pendente'
       },
       {
         id: 3,
         aluno: 'Pedro Oliveira',
         valor: 180.0,
-        dataVencimento: '2024-12-20',
+        dataVencimento: '2025-05-29',
         status: 'pendente'
       },
       {
         id: 4,
         aluno: 'Ana Costa',
         valor: 150.0,
-        dataVencimento: '2024-12-21',
+        dataVencimento: '2025-05-25',
         status: 'pendente'
       },
       {
@@ -271,7 +271,7 @@ function Dashboard() {
   )
 
   return (
-    <div className="h-screen w-full p-6 text-gray-200">
+    <div className="h-screen w-full p-6 text-gray-200 overflow-x-auto">
       <div className="mb-6">
         <h1 className="text-4xl font-bold opacity-35 mb-2">Dashboard</h1>
         <p className="text-gray-400">
@@ -549,20 +549,18 @@ function Dashboard() {
                 >
                   <div
                     className={`text-sm font-medium mb-1 ${
-                      isHoje ? 'text-yellow-400' : 'text-gray-300'
+                      isHoje ? 'text-stone-800' : 'text-gray-300'
                     }`}
                   >
                     {diaNome[dia]}
                   </div>
-                  <div
-                    className={`text-2xl font-bold ${isHoje ? 'text-yellow-300' : 'text-white'}`}
-                  >
+                  <div className={`text-2xl font-bold ${isHoje ? 'text-stone-800' : 'text-white'}`}>
                     {treinosDia}
                   </div>
-                  <div className={`text-xs ${isHoje ? 'text-yellow-500' : 'text-gray-400'}`}>
+                  <div className={`text-xs ${isHoje ? 'text-stone-800' : 'text-gray-400'}`}>
                     {treinosDia === 1 ? 'treino' : 'treinos'}
                   </div>
-                  {isHoje && <div className="text-xs text-yellow-400 font-medium mt-1">HOJE</div>}
+                  {isHoje && <div className="text-xs text-stone-800 font-medium mt-1">HOJE</div>}
                 </div>
               )
             })}
@@ -591,35 +589,6 @@ function Dashboard() {
               </div>
               <div className="text-sm text-gray-300">Média Aulas/Aluno</div>
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Seção - Ações Rápidas */}
-      <div className="mt-6">
-        <div className="bg-stone-700 rounded-lg p-4">
-          <h2 className="text-xl font-bold mb-4 text-purple-400">⚡ Ações Rápidas</h2>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <button className="bg-lime-600 hover:bg-lime-700 text-white p-4 rounded-lg transition-colors">
-              <div className="text-2xl mb-2">👥</div>
-              <div className="text-sm font-medium">Novo Aluno</div>
-            </button>
-
-            <button className="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-lg transition-colors">
-              <div className="text-2xl mb-2">📅</div>
-              <div className="text-sm font-medium">Agendar Treino</div>
-            </button>
-
-            <button className="bg-green-600 hover:bg-green-700 text-white p-4 rounded-lg transition-colors">
-              <div className="text-2xl mb-2">💰</div>
-              <div className="text-sm font-medium">Receber Pagamento</div>
-            </button>
-
-            <button className="bg-red-600 hover:bg-red-700 text-white p-4 rounded-lg transition-colors">
-              <div className="text-2xl mb-2">💳</div>
-              <div className="text-sm font-medium">Pagar Conta</div>
-            </button>
           </div>
         </div>
       </div>
