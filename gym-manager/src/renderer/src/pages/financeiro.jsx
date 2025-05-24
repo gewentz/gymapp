@@ -1,8 +1,13 @@
 function Financeiro() {
   return (
-    <div>
-      <h1>Financeiro</h1>
-      <p>Esta é a página de financeiro.</p>
+    <div className="h-screen w-full p-6 text-gray-200">
+      <h1 className="text-4xl font-bold mb-4 opacity-35">Financeiro</h1>
+      <div
+        className="bg-stone-700 shadow-2xl w-full rounded-md border-2 p-2"
+        style={{ height: 'calc(100vh - 120px)' }}
+      >
+        asd
+      </div>
     </div>
   )
 }

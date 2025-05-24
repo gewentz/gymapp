@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom'
 function Sidebar({ isCollapsed, onToggle }) {
   return (
     <div
-      className={`h-screen bg-stone-700 text-white transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'} fixed left-0 top-0`}
+      className={`h-screen bg-stone-700 text-white transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'} flex flex-col`}
     >
       <div className="flex items-center justify-between p-4 border-b border-stone-700">
         <h2 className="text-xl font-bold ">{isCollapsed ? 'RA' : 'Ricardo Alves Personal'}</h2>
@@ -14,7 +14,7 @@ function Sidebar({ isCollapsed, onToggle }) {
           {isCollapsed ? '→' : '←'}
         </button>
       </div>
-      <nav className="mt-4">
+      <nav className="mt-4 flex-1">
         <ul>
           <li className="mb-1">
             <NavLink
@@ -70,7 +70,7 @@ function Sidebar({ isCollapsed, onToggle }) {
           </li>
         </ul>
       </nav>
-      <div className="absolute bottom-0 w-full p-4 border-t border-stone-700">
+      <div className="w-full p-4 border-t border-stone-700">
         <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-start'}`}>
           <div className="w-8 h-8 flex items-center justify-center text-white font-bold">
             V1.0.0
