@@ -18,85 +18,9 @@ function Alunos() {
         { dia: 'sexta', horario: '08:00' }
       ],
       status: 'Ativo',
-      dataMatricula: '2024-01-15'
-    },
-    {
-      id: 2,
-      nome: 'Maria Santos',
-      nascimento: '1990-05-30',
-      telefone: '(11) 88888-8888',
-      email: 'maria@email.com',
-      diasTreino: ['terca', 'quinta'],
-      horariosTreino: [
-        { dia: 'terca', horario: '09:00' },
-        { dia: 'quinta', horario: '09:00' }
-      ],
-      status: 'Ativo',
-      dataMatricula: '2024-02-10'
-    },
-    {
-      id: 3,
-      nome: 'Pedro Oliveira',
-      nascimento: '1998-11-15',
-      telefone: '(11) 77777-7777',
-      email: 'pedro@email.com',
-      diasTreino: ['segunda', 'terca', 'quarta', 'quinta', 'sexta'],
-      horariosTreino: [
-        { dia: 'segunda', horario: '10:00' },
-        { dia: 'terca', horario: '10:00' },
-        { dia: 'quarta', horario: '10:00' },
-        { dia: 'quinta', horario: '10:00' },
-        { dia: 'sexta', horario: '10:00' }
-      ],
-      status: 'Inativo',
-      dataMatricula: '2023-12-05'
-    },
-    {
-      id: 4,
-      nome: 'Ana Costa',
-      nascimento: '1992-08-22',
-      telefone: '(11) 66666-6666',
-      email: 'ana@email.com',
-      diasTreino: ['segunda', 'quarta', 'sexta', 'sabado'],
-      horariosTreino: [
-        { dia: 'segunda', horario: '14:00' },
-        { dia: 'quarta', horario: '14:00' },
-        { dia: 'sexta', horario: '14:00' },
-        { dia: 'sabado', horario: '14:00' }
-      ],
-      status: 'Ativo',
-      dataMatricula: '2024-03-01'
-    },
-    {
-      id: 5,
-      nome: 'Carlos Ferreira',
-      nascimento: '1985-12-10',
-      telefone: '(11) 55555-5555',
-      email: 'carlos@email.com',
-      diasTreino: ['terca', 'quinta', 'sabado'],
-      horariosTreino: [
-        { dia: 'terca', horario: '16:00' },
-        { dia: 'quinta', horario: '16:00' },
-        { dia: 'sabado', horario: '16:00' }
-      ],
-      status: 'Ativo',
-      dataMatricula: '2024-01-20'
-    },
-    {
-      id: 6,
-      nome: 'Lucia Mendes',
-      nascimento: '1993-07-18',
-      telefone: '(11) 44444-4444',
-      email: 'lucia@email.com',
-      diasTreino: ['segunda', 'quarta', 'sexta', 'domingo'],
-      horariosTreino: [
-        { dia: 'segunda', horario: '18:00' },
-        { dia: 'quarta', horario: '18:00' },
-        { dia: 'sexta', horario: '18:00' },
-        { dia: 'domingo', horario: '18:00' }
-      ],
-      status: 'Ativo',
-      dataMatricula: '2024-02-28'
+      dataMatricula: '2024-01-15',
+      corPadrao: '#4CAF50',
+      mensalidade: 150
     }
   ])
 
@@ -113,7 +37,9 @@ function Alunos() {
     email: '',
     diasTreino: [],
     horariosTreino: [],
-    status: 'Ativo'
+    status: 'Ativo',
+    corPadrao: '#5fffd2',
+    mensalidade: ''
   })
 
   // Horários disponíveis
@@ -211,7 +137,9 @@ function Alunos() {
       email: '',
       diasTreino: [],
       horariosTreino: [],
-      status: 'Ativo'
+      status: 'Ativo',
+      corPadrao: '#4CAF50',
+      mensalidade: ''
     })
     setIsModalOpen(true)
   }
@@ -226,41 +154,53 @@ function Alunos() {
       email: aluno.email,
       diasTreino: [...aluno.diasTreino],
       horariosTreino: [...(aluno.horariosTreino || [])],
-      status: aluno.status
+      status: aluno.status,
+      corPadrao: aluno.corPadrao || '#4CAF50',
+      mensalidade: aluno.mensalidade || ''
     })
     setIsModalOpen(true)
   }
 
   // Função para salvar aluno (novo ou editado)
   const handleSaveAluno = () => {
-    // Validação básica
-    if (!formData.nome || !formData.email || !formData.telefone || !formData.nascimento) {
+    if (
+      !formData.nome ||
+      !formData.email ||
+      !formData.telefone ||
+      !formData.nascimento ||
+      !formData.mensalidade
+    ) {
       alert('Por favor, preencha todos os campos obrigatórios.')
       return
     }
 
+    const mansalidadeNum = parseFloat(formData.mensalidade)
+    if (isNaN(mansalidadeNum) || mansalidadeNum <= 0) {
+      alert('Por favor, insira um valor válido para a mensalidade.')
+      return
+    }
+
     if (editingAluno) {
-      // Editando aluno existente
       const alunoAtualizado = {
         ...editingAluno,
-        ...formData
+        ...formData,
+        mensalidade: mansalidadeNum
       }
 
       setAlunos((prev) =>
         prev.map((aluno) => (aluno.id === editingAluno.id ? alunoAtualizado : aluno))
       )
     } else {
-      // Criando novo aluno
       const novoAluno = {
         id: Math.max(...alunos.map((a) => a.id)) + 1,
         ...formData,
+        mensalidade: mansalidadeNum,
         dataMatricula: new Date().toISOString().split('T')[0]
       }
 
       setAlunos((prev) => [...prev, novoAluno])
     }
 
-    // Limpar formulário e fechar modal
     handleCancel()
   }
 
@@ -273,7 +213,9 @@ function Alunos() {
       email: '',
       diasTreino: [],
       horariosTreino: [],
-      status: 'Ativo'
+      status: 'Ativo',
+      corPadrao: '#4CAF50',
+      mensalidade: ''
     })
     setEditingAluno(null)
     setIsModalOpen(false)
@@ -502,6 +444,47 @@ function Alunos() {
                 <option value="Inativo">Inativo</option>
               </select>
             </div>
+
+            {/* Cor do Aluno */}
+            <div>
+              <label htmlFor="corPadrao" className="block text-sm font-medium text-stone-700 mb-1">
+                Cor do Aluno
+              </label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="color"
+                  id="corPadrao"
+                  name="corPadrao"
+                  value={formData.corPadrao}
+                  onChange={handleInputChange}
+                  className="w-12 h-10 border border-stone-300 rounded-md cursor-pointer focus:outline-none focus:ring-2 focus:ring-lime-500"
+                />
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-6 h-6 rounded-full border-2 border-stone-300"
+                    style={{ backgroundColor: formData.corPadrao }}
+                  ></div>
+                  <span className="text-sm text-stone-600">{formData.corPadrao}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Mensalidade */}
+          <div>
+            <label htmlFor="mensalidade" className="block text-sm font-medium text-stone-700 mb-1">
+              Mensalidade (R$)*
+            </label>
+            <input
+              type="number"
+              id="mensalidade"
+              name="mensalidade"
+              value={formData.mensalidade}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-stone-300 text-stone-700 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500"
+              placeholder="Valor da mensalidade"
+              required
+            />
           </div>
 
           <div className="text-sm text-stone-500 mt-4">* Campos obrigatórios</div>

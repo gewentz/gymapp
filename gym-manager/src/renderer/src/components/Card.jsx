@@ -44,7 +44,14 @@ function Card({ aluno, onEdit = null }) {
   return (
     <div className="bg-stone-600 rounded-lg p-4 shadow-lg hover:shadow-xl transition-shadow border border-stone-500">
       <div className="flex justify-between items-start mb-3">
-        <h3 className="text-lg font-semibold text-white truncate">{aluno.nome}</h3>
+        <div className="flex items-center gap-2">
+          <h3 className="text-lg font-semibold text-white truncate">{aluno.nome}</h3>
+          <div
+            className="w-6 h-6 rounded-full flex-shrink-0"
+            style={{ backgroundColor: aluno.corPadrao || '#4CAF50' }}
+            title={`Cor: ${aluno.corPadrao || '#4CAF50'}`}
+          ></div>
+        </div>
         <span className={`text-sm font-medium ${getStatusColor(aluno.status)}`}>
           {aluno.status}
         </span>
