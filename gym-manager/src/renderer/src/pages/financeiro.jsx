@@ -374,13 +374,13 @@ function Financeiro() {
                         <div className="flex justify-end">
                           <button
                             onClick={() => handleMarcarContaPaga(fatura)}
-                            className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                            className={`px-3 py-1 hover:cursor-pointer rounded text-sm font-medium transition-colors ${
                               fatura.tipo === 'receber'
                                 ? 'bg-green-600 hover:bg-green-700 text-white'
                                 : 'bg-blue-600 hover:bg-blue-700 text-white'
                             }`}
                           >
-                            {fatura.tipo === 'receber' ? 'Conta Recebida' : 'Conta Paga'}
+                            {fatura.tipo === 'receber' ? 'R$ Conta Recebida' : 'R$ Conta Paga'}
                           </button>
                         </div>
                       )}

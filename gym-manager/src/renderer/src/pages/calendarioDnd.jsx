@@ -177,11 +177,6 @@ function CalendarioDnd() {
     <div className="h-screen w-full p-6 text-gray-200">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-4xl font-bold opacity-35">Calendário de Treinos</h1>
-        <div className="flex gap-4">
-          <button className="px-4 py-2 bg-lime-600 text-white rounded-md hover:bg-lime-700 transition-colors">
-            + Novo Agendamento
-          </button>
-        </div>
       </div>
 
       <div
