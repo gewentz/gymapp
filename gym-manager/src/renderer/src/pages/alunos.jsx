@@ -1,29 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Card from '../components/Card'
 import Modal from '../components/Modal'
 
 function Alunos() {
-  // Dados mockados dos alunos
-  const [alunos, setAlunos] = useState([
-    {
-      id: 1,
-      nome: 'João Silva',
-      nascimento: '1995-09-25',
-      telefone: '(11) 99999-9999',
-      email: 'joao@email.com',
-      diasTreino: ['segunda', 'quarta', 'sexta'],
-      horariosTreino: [
-        { dia: 'segunda', horario: '08:00' },
-        { dia: 'quarta', horario: '08:00' },
-        { dia: 'sexta', horario: '08:00' }
-      ],
-      status: 'Ativo',
-      dataMatricula: '2024-01-15',
-      corPadrao: '#4CAF50',
-      mensalidade: 150
-    }
-  ])
-
+  const [alunos, setAlunos] = useState([])
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('Todos')
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -42,6 +23,25 @@ function Alunos() {
     mensalidade: ''
   })
 
+  // Carregar alunos do banco de dados
+  const loadAlunos = async () => {
+    try {
+      setLoading(true)
+      const alunosData = await window.api.alunos.getAll()
+      setAlunos(alunosData)
+    } catch (error) {
+      console.error('Erro ao carregar alunos:', error)
+      alert('Erro ao carregar dados dos alunos')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Carregar alunos ao montar o componente
+  useEffect(() => {
+    loadAlunos()
+  }, [])
+
   // Horários disponíveis
   const horariosDisponiveis = []
   for (let hora = 6; hora <= 22; hora++) {
@@ -51,12 +51,14 @@ function Alunos() {
     }
   }
 
-  // Função para calcular a idade
+  // Função para calcular a idade (corrigida)
   const calcularIdade = (dataNascimento) => {
     if (!dataNascimento) return 0
 
     const hoje = new Date()
-    const nascimento = new Date(dataNascimento)
+    const [year, month, day] = dataNascimento.split('-')
+    const nascimento = new Date(year, month - 1, day) // month - 1 porque Date usa 0-11 para meses
+
     let idade = hoje.getFullYear() - nascimento.getFullYear()
     const mesAtual = hoje.getMonth()
     const mesNascimento = nascimento.getMonth()
@@ -69,6 +71,15 @@ function Alunos() {
     }
 
     return idade
+  }
+
+  // Função para obter data atual no formato correto
+  const getCurrentDate = () => {
+    const today = new Date()
+    const year = today.getFullYear()
+    const month = String(today.getMonth() + 1).padStart(2, '0')
+    const day = String(today.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
   }
 
   // Filtrar alunos baseado na busca e status
@@ -162,7 +173,7 @@ function Alunos() {
   }
 
   // Função para salvar aluno (novo ou editado)
-  const handleSaveAluno = () => {
+  const handleSaveAluno = async () => {
     if (
       !formData.nome ||
       !formData.email ||
@@ -174,34 +185,59 @@ function Alunos() {
       return
     }
 
-    const mansalidadeNum = parseFloat(formData.mensalidade)
-    if (isNaN(mansalidadeNum) || mansalidadeNum <= 0) {
+    const mensalidadeNum = parseFloat(formData.mensalidade)
+    if (isNaN(mensalidadeNum) || mensalidadeNum <= 0) {
       alert('Por favor, insira um valor válido para a mensalidade.')
       return
     }
 
-    if (editingAluno) {
-      const alunoAtualizado = {
-        ...editingAluno,
-        ...formData,
-        mensalidade: mansalidadeNum
+    try {
+      if (editingAluno) {
+        // Atualizar aluno existente
+        const alunoAtualizado = {
+          ...formData,
+          mensalidade: mensalidadeNum
+        }
+
+        await window.api.alunos.update(editingAluno.id, alunoAtualizado)
+        alert('Aluno atualizado com sucesso!')
+      } else {
+        // Criar novo aluno
+        const novoAluno = {
+          ...formData,
+          mensalidade: mensalidadeNum,
+          dataMatricula: getCurrentDate()
+        }
+
+        await window.api.alunos.create(novoAluno)
+        alert('Aluno cadastrado com sucesso!')
       }
 
-      setAlunos((prev) =>
-        prev.map((aluno) => (aluno.id === editingAluno.id ? alunoAtualizado : aluno))
-      )
-    } else {
-      const novoAluno = {
-        id: Math.max(...alunos.map((a) => a.id)) + 1,
-        ...formData,
-        mensalidade: mansalidadeNum,
-        dataMatricula: new Date().toISOString().split('T')[0]
+      // Recarregar lista de alunos
+      await loadAlunos()
+      handleCancel()
+    } catch (error) {
+      console.error('Erro ao salvar aluno:', error)
+      if (error.message.includes('UNIQUE constraint failed')) {
+        alert('Este email já está cadastrado para outro aluno.')
+      } else {
+        alert('Erro ao salvar aluno. Tente novamente.')
       }
-
-      setAlunos((prev) => [...prev, novoAluno])
     }
+  }
 
-    handleCancel()
+  // Função para deletar aluno
+  const handleDeleteAluno = async (aluno) => {
+    if (window.confirm(`Tem certeza que deseja excluir o aluno ${aluno.nome}?`)) {
+      try {
+        await window.api.alunos.delete(aluno.id)
+        alert('Aluno excluído com sucesso!')
+        await loadAlunos()
+      } catch (error) {
+        console.error('Erro ao excluir aluno:', error)
+        alert('Erro ao excluir aluno. Tente novamente.')
+      }
+    }
   }
 
   // Função para cancelar
@@ -219,6 +255,17 @@ function Alunos() {
     })
     setEditingAluno(null)
     setIsModalOpen(false)
+  }
+
+  if (loading) {
+    return (
+      <div className="h-screen w-full p-6 text-gray-200 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-lime-500 mx-auto mb-4"></div>
+          <p className="text-lg">Carregando alunos...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -263,7 +310,12 @@ function Alunos() {
         {alunosFiltrados.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {alunosFiltrados.map((aluno) => (
-              <Card key={aluno.id} aluno={aluno} onEdit={handleEditarAluno} />
+              <Card
+                key={aluno.id}
+                aluno={aluno}
+                onEdit={handleEditarAluno}
+                onDelete={handleDeleteAluno}
+              />
             ))}
           </div>
         ) : (
@@ -483,6 +535,8 @@ function Alunos() {
               onChange={handleInputChange}
               className="w-full px-3 py-2 border border-stone-300 text-stone-700 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500"
               placeholder="Valor da mensalidade"
+              step="0.01"
+              min="0"
               required
             />
           </div>

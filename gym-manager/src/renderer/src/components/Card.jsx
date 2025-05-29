@@ -1,4 +1,4 @@
-function Card({ aluno, onEdit = null }) {
+function Card({ aluno, onEdit = null, onDelete = null }) {
   const getStatusColor = (status) => {
     return status === 'Ativo' ? 'text-green-400' : 'text-red-400'
   }
@@ -9,11 +9,20 @@ function Card({ aluno, onEdit = null }) {
     }
   }
 
+  const handleDelete = () => {
+    if (onDelete && typeof onDelete === 'function') {
+      onDelete(aluno)
+    }
+  }
+
+  // Função para calcular idade corrigida
   const calcularIdade = (dataNascimento) => {
     if (!dataNascimento) return 0
 
     const hoje = new Date()
-    const nascimento = new Date(dataNascimento)
+    const [year, month, day] = dataNascimento.split('-')
+    const nascimento = new Date(year, month - 1, day) // month - 1 porque Date usa 0-11 para meses
+
     let idade = hoje.getFullYear() - nascimento.getFullYear()
     const mesAtual = hoje.getMonth()
     const mesNascimento = nascimento.getMonth()
@@ -39,6 +48,25 @@ function Card({ aluno, onEdit = null }) {
       domingo: 'Dom'
     }
     return diasAbrev[dia] || dia
+  }
+
+  // Função para formatar data corrigida
+  const formatarData = (data) => {
+    if (!data) return 'N/A'
+
+    try {
+      // Se a data já está no formato YYYY-MM-DD
+      if (typeof data === 'string' && data.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        const [year, month, day] = data.split('-')
+        return `${day}/${month}/${year}`
+      }
+
+      // Se for outro formato, tenta converter
+      const date = new Date(data)
+      return date.toLocaleDateString('pt-BR')
+    } catch {
+      return data
+    }
   }
 
   return (
@@ -68,11 +96,13 @@ function Card({ aluno, onEdit = null }) {
           <span className="text-gray-400">Idade:</span> {calcularIdade(aluno.nascimento)} anos
         </p>
         <p className="text-gray-300 text-sm">
-          <span className="text-gray-400">Nascimento:</span>{' '}
-          {aluno.nascimento.split('-').reverse().join('/')}
+          <span className="text-gray-400">Nascimento:</span> {formatarData(aluno.nascimento)}
         </p>
         <p className="text-gray-300 text-sm">
-          <span className="text-gray-400">Matrícula:</span> {aluno.dataMatricula}
+          <span className="text-gray-400">Matrícula:</span> {formatarData(aluno.dataMatricula)}
+        </p>
+        <p className="text-gray-300 text-sm">
+          <span className="text-gray-400">Mensalidade:</span> R$ {aluno.mensalidade?.toFixed(2) || '0.00'}
         </p>
       </div>
 
@@ -126,10 +156,16 @@ function Card({ aluno, onEdit = null }) {
         </div>
 
         <div className="flex gap-2">
-          <button onClick={handleEdit} className="text-blue-400 hover:text-blue-300 text-sm">
-            Editar
-          </button>
-          <button className="text-red-400 hover:text-red-300 text-sm">Excluir</button>
+          {onEdit && (
+            <button onClick={handleEdit} className="text-blue-400 hover:text-blue-300 text-sm">
+              Editar
+            </button>
+          )}
+          {onDelete && (
+            <button onClick={handleDelete} className="text-red-400 hover:text-red-300 text-sm">
+              Excluir
+            </button>
+          )}
         </div>
       </div>
     </div>

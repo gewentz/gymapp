@@ -2,6 +2,7 @@ import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
+import database from './database.js'
 
 function createWindow() {
   // Create the browser window.
@@ -13,7 +14,9 @@ function createWindow() {
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false
+      sandbox: false,
+      nodeIntegration: false,
+      contextIsolation: true
     }
   })
 
@@ -38,15 +41,69 @@ function createWindow() {
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron')
+
+  // Conectar ao banco de dados
+  try {
+    await database.connect()
+    console.log('Banco de dados inicializado com sucesso')
+  } catch (error) {
+    console.error('Erro ao inicializar banco de dados:', error)
+  }
 
   // Default open or close DevTools by F12 in development
   // and ignore CommandOrControl + R in production.
   // see https://github.com/alex8088/electron-toolkit/tree/master/packages/utils
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)
+  })
+
+  // IPC handlers para operações do banco de dados
+  ipcMain.handle('db:getAllAlunos', async () => {
+    try {
+      return await database.getAllAlunos()
+    } catch (error) {
+      console.error('Erro ao buscar alunos:', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('db:getAlunoById', async (event, id) => {
+    try {
+      return await database.getAlunoById(id)
+    } catch (error) {
+      console.error('Erro ao buscar aluno:', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('db:createAluno', async (event, alunoData) => {
+    try {
+      return await database.createAluno(alunoData)
+    } catch (error) {
+      console.error('Erro ao criar aluno:', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('db:updateAluno', async (event, id, alunoData) => {
+    try {
+      return await database.updateAluno(id, alunoData)
+    } catch (error) {
+      console.error('Erro ao atualizar aluno:', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('db:deleteAluno', async (event, id) => {
+    try {
+      return await database.deleteAluno(id)
+    } catch (error) {
+      console.error('Erro ao deletar aluno:', error)
+      throw error
+    }
   })
 
   // IPC test
@@ -64,7 +121,14 @@ app.whenReady().then(() => {
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
-app.on('window-all-closed', () => {
+app.on('window-all-closed', async () => {
+  // Fechar conexão com banco de dados
+  try {
+    await database.close()
+  } catch (error) {
+    console.error('Erro ao fechar banco de dados:', error)
+  }
+
   if (process.platform !== 'darwin') {
     app.quit()
   }
