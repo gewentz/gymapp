@@ -10,8 +10,10 @@ function Financeiro() {
   const [isModalTransacaoOpen, setIsModalTransacaoOpen] = useState(false)
   const [isModalFaturaOpen, setIsModalFaturaOpen] = useState(false)
   const [isModalZerarOpen, setIsModalZerarOpen] = useState(false)
+  const [isModalConfirmDeleteOpen, setIsModalConfirmDeleteOpen] = useState(false)
   const [editingTransacao, setEditingTransacao] = useState(null)
   const [editingFatura, setEditingFatura] = useState(null)
+  const [itemToDelete, setItemToDelete] = useState(null) // { type: 'transacao' | 'fatura', item: object }
 
   // Estados para confirmação de zerar dados
   const [confirmacaoZerar, setConfirmacaoZerar] = useState({
@@ -113,6 +115,68 @@ function Financeiro() {
     return { entradas, saidas }
   }
 
+  // Handlers para exclusão de itens específicos
+  const handleDeleteItem = (type, item) => {
+    setItemToDelete({ type, item })
+    setIsModalConfirmDeleteOpen(true)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!itemToDelete) return
+
+    try {
+      const { type, item } = itemToDelete
+
+      if (type === 'transacao') {
+        await window.api.transacoes.delete(item.id)
+      } else if (type === 'fatura') {
+        await window.api.faturas.delete(item.id)
+      }
+
+      await loadData()
+      setIsModalConfirmDeleteOpen(false)
+      setItemToDelete(null)
+    } catch (error) {
+      console.error('Erro ao excluir item:', error)
+      alert('Erro ao excluir item')
+    }
+  }
+
+  const handleCancelDelete = () => {
+    setIsModalConfirmDeleteOpen(false)
+    setItemToDelete(null)
+  }
+
+  // Handlers para edição
+  const handleEditTransacao = (transacao) => {
+    setFormTransacao({
+      data: transacao.data,
+      descricao: transacao.descricao,
+      valor: transacao.valor.toString(),
+      tipo: transacao.tipo,
+      categoria: transacao.categoria || '',
+      aluno_id: transacao.aluno_id || ''
+    })
+    setEditingTransacao(transacao)
+    setIsModalTransacaoOpen(true)
+  }
+
+  const handleEditFatura = (fatura) => {
+    setFormFatura({
+      descricao: fatura.descricao,
+      valor: fatura.valor.toString(),
+      dataVencimento: fatura.dataVencimento,
+      tipo: fatura.tipo,
+      status: fatura.status,
+      categoria: fatura.categoria || '',
+      aluno_id: fatura.aluno_id || '',
+      numeroParcelas: 1,
+      temParcelas: false
+    })
+    setEditingFatura(fatura)
+    setIsModalFaturaOpen(true)
+  }
+
   // Handlers para transações
   const handleInputTransacao = (e) => {
     const { name, value } = e.target
@@ -131,7 +195,7 @@ function Financeiro() {
     try {
       const transacaoData = {
         ...formTransacao,
-        valor: parseFloat(formTransacao.valor) || 0, // Remover o replace de vírgula
+        valor: parseFloat(formTransacao.valor) || 0,
         aluno_id: formTransacao.aluno_id || null
       }
 
@@ -167,7 +231,7 @@ function Financeiro() {
     const { name, value } = e.target
     setFormFatura((prev) => ({
       ...prev,
-      [name]: value // Remover a conversão aqui, manter como string
+      [name]: value
     }))
   }
 
@@ -464,7 +528,7 @@ function Financeiro() {
                   .map((transacao) => (
                     <div
                       key={transacao.id}
-                      className="bg-stone-600 rounded-lg p-3 flex justify-between items-center"
+                      className="bg-stone-600 rounded-lg p-3 flex justify-between items-center group hover:bg-stone-500 transition-colors"
                     >
                       <div className="flex-1">
                         <div className="flex justify-between items-start mb-1">
@@ -495,6 +559,28 @@ function Financeiro() {
                           </div>
                         </div>
                       </div>
+
+                      {/* Botões de ação */}
+                      <div className="flex gap-2 ml-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => handleEditTransacao(transacao)}
+                          className="p-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                          title="Editar"
+                        >
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => handleDeleteItem('transacao', transacao)}
+                          className="p-1 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                          title="Excluir"
+                        >
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9zM4 5a2 2 0 012-2h8a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 102 0v3a1 1 0 11-2 0V9zm4 0a1 1 0 10-2 0v3a1 1 0 102 0V9z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
                   ))}
               </div>
@@ -522,17 +608,41 @@ function Financeiro() {
                 {faturas
                   .sort((a, b) => new Date(a.dataVencimento) - new Date(b.dataVencimento))
                   .map((fatura) => (
-                    <div key={fatura.id} className="bg-stone-600 rounded-lg p-3">
+                    <div key={fatura.id} className="bg-stone-600 rounded-lg p-3 group hover:bg-stone-500 transition-colors">
                       <div className="flex justify-between items-start mb-2">
                         <h4 className="font-semibold text-white">{fatura.descricao}</h4>
-                        <span
-                          className={`font-bold ${fatura.tipo === 'receber' ? 'text-green-400' : 'text-red-400'}`}
-                        >
-                          {new Intl.NumberFormat('pt-BR', {
-                            style: 'currency',
-                            currency: 'BRL'
-                          }).format(fatura.valor)}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`font-bold ${fatura.tipo === 'receber' ? 'text-green-400' : 'text-red-400'}`}
+                          >
+                            {new Intl.NumberFormat('pt-BR', {
+                              style: 'currency',
+                              currency: 'BRL'
+                            }).format(fatura.valor)}
+                          </span>
+
+                          {/* Botões de ação */}
+                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={() => handleEditFatura(fatura)}
+                              className="p-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                              title="Editar"
+                            >
+                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => handleDeleteItem('fatura', fatura)}
+                              className="p-1 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                              title="Excluir"
+                            >
+                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9zM4 5a2 2 0 012-2h8a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 102 0v3a1 1 0 11-2 0V9zm4 0a1 1 0 10-2 0v3a1 1 0 102 0V9z" clipRule="evenodd" />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
                       </div>
                       <div className="flex justify-between items-center text-sm mb-3">
                         <span className="text-gray-300">
@@ -598,7 +708,7 @@ function Financeiro() {
       <Modal
         isOpen={isModalTransacaoOpen}
         onClose={handleCancelTransacao}
-        title="Nova Transação"
+        title={editingTransacao ? "Editar Transação" : "Nova Transação"}
         size="md"
         footer={
           <>
@@ -606,7 +716,7 @@ function Financeiro() {
               Cancelar
             </Modal.Button>
             <Modal.Button variant="primary" onClick={handleSaveTransacao}>
-              Salvar
+              {editingTransacao ? "Atualizar" : "Salvar"}
             </Modal.Button>
           </>
         }
@@ -706,7 +816,7 @@ function Financeiro() {
       <Modal
         isOpen={isModalFaturaOpen}
         onClose={handleCancelFatura}
-        title="Nova Fatura"
+        title={editingFatura ? "Editar Fatura" : "Nova Fatura"}
         size="lg"
         footer={
           <>
@@ -714,7 +824,7 @@ function Financeiro() {
               Cancelar
             </Modal.Button>
             <Modal.Button variant="primary" onClick={handleSaveFatura}>
-              Salvar
+              {editingFatura ? "Atualizar" : "Salvar"}
             </Modal.Button>
           </>
         }
@@ -751,7 +861,7 @@ function Financeiro() {
 
             <div>
               <label className="block text-sm font-medium text-stone-700 mb-1">
-                Data do Primeiro Vencimento *
+                Data do {editingFatura ? "Vencimento" : "Primeiro Vencimento"} *
               </label>
               <input
                 type="date"
@@ -825,65 +935,121 @@ function Financeiro() {
             </div>
           </div>
 
-          {/* Seção de Parcelas */}
-          <div className="border-t border-stone-300 pt-4">
-            <div className="flex items-center mb-4">
-              <input
-                type="checkbox"
-                id="temParcelas"
-                name="temParcelas"
-                checked={formFatura.temParcelas}
-                onChange={(e) =>
-                  setFormFatura((prev) => ({
-                    ...prev,
-                    temParcelas: e.target.checked,
-                    numeroParcelas: e.target.checked ? prev.numeroParcelas : 1
-                  }))
-                }
-                className="mr-2 h-4 w-4 text-lime-600 focus:ring-lime-500 border-stone-300 rounded"
-              />
-              <label htmlFor="temParcelas" className="text-sm font-medium text-stone-700">
-                Dividir em parcelas
-              </label>
-            </div>
+          {/* Seção de Parcelas - apenas para novas faturas */}
+          {!editingFatura && (
+            <div className="border-t border-stone-300 pt-4">
+              <div className="flex items-center mb-4">
+                <input
+                  type="checkbox"
+                  id="temParcelas"
+                  name="temParcelas"
+                  checked={formFatura.temParcelas}
+                  onChange={(e) =>
+                    setFormFatura((prev) => ({
+                      ...prev,
+                      temParcelas: e.target.checked,
+                      numeroParcelas: e.target.checked ? prev.numeroParcelas : 1
+                    }))
+                  }
+                  className="mr-2 h-4 w-4 text-lime-600 focus:ring-lime-500 border-stone-300 rounded"
+                />
+                <label htmlFor="temParcelas" className="text-sm font-medium text-stone-700">
+                  Dividir em parcelas
+                </label>
+              </div>
 
-            {formFatura.temParcelas && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-stone-700 mb-1">
-                    Número de Parcelas
-                  </label>
-                  <input
-                    type="number"
-                    name="numeroParcelas"
-                    value={formFatura.numeroParcelas}
-                    onChange={handleInputFatura}
-                    min="2"
-                    max="60"
-                    className="w-full px-3 py-2 border border-stone-300 text-stone-700 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-500"
-                  />
-                </div>
+              {formFatura.temParcelas && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-stone-700 mb-1">
+                      Número de Parcelas
+                    </label>
+                    <input
+                      type="number"
+                      name="numeroParcelas"
+                      value={formFatura.numeroParcelas}
+                      onChange={handleInputFatura}
+                      min="2"
+                      max="60"
+                      className="w-full px-3 py-2 border border-stone-300 text-stone-700 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-500"
+                    />
+                  </div>
 
-                <div className="flex flex-col justify-end">
-                  <div className="bg-stone-100 p-3 rounded-md">
-                    <p className="text-sm text-stone-600">
-                      <strong>Valor por parcela:</strong>{' '}
-                      {formFatura.valor && formFatura.numeroParcelas
-                        ? new Intl.NumberFormat('pt-BR', {
-                            style: 'currency',
-                            currency: 'BRL'
-                          }).format(parseFloat(formFatura.valor) / formFatura.numeroParcelas)
-                        : 'R$ 0,00'}
-                    </p>
-                    <p className="text-xs text-stone-500 mt-1">
-                      Vencimentos mensais a partir da data informada
-                    </p>
+                  <div className="flex flex-col justify-end">
+                    <div className="bg-stone-100 p-3 rounded-md">
+                      <p className="text-sm text-stone-600">
+                        <strong>Valor por parcela:</strong>{' '}
+                        {formFatura.valor && formFatura.numeroParcelas
+                          ? new Intl.NumberFormat('pt-BR', {
+                              style: 'currency',
+                              currency: 'BRL'
+                            }).format(parseFloat(formFatura.valor) / formFatura.numeroParcelas)
+                          : 'R$ 0,00'}
+                      </p>
+                      <p className="text-xs text-stone-500 mt-1">
+                        Vencimentos mensais a partir da data informada
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </form>
+      </Modal>
+
+      {/* Modal Confirmar Exclusão */}
+      <Modal
+        isOpen={isModalConfirmDeleteOpen}
+        onClose={handleCancelDelete}
+        title="Confirmar Exclusão"
+        size="md"
+        footer={
+          <>
+            <Modal.Button variant="outline" onClick={handleCancelDelete}>
+              Cancelar
+            </Modal.Button>
+            <Modal.Button variant="danger" onClick={handleConfirmDelete}>
+              Excluir
+            </Modal.Button>
+          </>
+        }
+      >
+        <div className="text-center">
+          <div className="text-6xl mb-4">🗑️</div>
+          <h3 className="text-lg font-semibold text-stone-800 mb-4">
+            Tem certeza que deseja excluir este item?
+          </h3>
+
+          {itemToDelete && (
+            <div className="bg-stone-100 border border-stone-200 rounded-lg p-4 mb-4">
+              <p className="font-semibold text-stone-800">
+                {itemToDelete.type === 'transacao' ? 'Transação:' : 'Fatura:'}
+              </p>
+              <p className="text-stone-600">{itemToDelete.item.descricao}</p>
+              <p className="text-stone-600">
+                Valor: {new Intl.NumberFormat('pt-BR', {
+                  style: 'currency',
+                  currency: 'BRL'
+                }).format(itemToDelete.item.valor)}
+              </p>
+              {itemToDelete.type === 'transacao' && (
+                <p className="text-stone-600">
+                  Data: {formatDateBR(itemToDelete.item.data)}
+                </p>
+              )}
+              {itemToDelete.type === 'fatura' && (
+                <p className="text-stone-600">
+                  Vencimento: {formatDateBR(itemToDelete.item.dataVencimento)}
+                </p>
+              )}
+            </div>
+          )}
+
+          <p className="text-stone-600 text-sm">
+            Esta ação não pode ser desfeita.
+          </p>
+        </div>
       </Modal>
 
       {/* Modal Zerar Dados */}
