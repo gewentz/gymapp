@@ -1,75 +1,24 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Modal from '../components/Modal'
 
 function Financeiro() {
-  // Estado para transações do fluxo de caixa
-  const [transacoes, setTransacoes] = useState([
-    {
-      id: 1,
-      data: '2024-01-15',
-      descricao: 'Mensalidade João Silva',
-      valor: 150.0,
-      tipo: 'entrada',
-      categoria: 'Mensalidade'
-    },
-    {
-      id: 2,
-      data: '2024-01-16',
-      descricao: 'Conta de luz',
-      valor: 280.5,
-      tipo: 'saida',
-      categoria: 'Despesas'
-    },
-    {
-      id: 3,
-      data: '2024-01-17',
-      descricao: 'Mensalidade Maria Santos',
-      valor: 150.0,
-      tipo: 'entrada',
-      categoria: 'Mensalidade'
-    },
-    {
-      id: 4,
-      data: '2024-01-18',
-      descricao: 'Compra equipamentos',
-      valor: 500.0,
-      tipo: 'saida',
-      categoria: 'Equipamentos'
-    }
-  ])
-
-  // Estado para faturas futuras
-  const [faturas, setFaturas] = useState([
-    {
-      id: 1,
-      descricao: 'Mensalidade Pedro Oliveira',
-      valor: 150.0,
-      dataVencimento: '2024-02-05',
-      tipo: 'receber',
-      status: 'pendente'
-    },
-    {
-      id: 2,
-      descricao: 'Aluguel do espaço',
-      valor: 1200.0,
-      dataVencimento: '2024-02-01',
-      tipo: 'pagar',
-      status: 'pendente'
-    },
-    {
-      id: 3,
-      descricao: 'Mensalidade Ana Costa',
-      valor: 150.0,
-      dataVencimento: '2024-02-10',
-      tipo: 'receber',
-      status: 'pendente'
-    }
-  ])
+  const [transacoes, setTransacoes] = useState([])
+  const [faturas, setFaturas] = useState([])
+  const [alunos, setAlunos] = useState([])
+  const [loading, setLoading] = useState(true)
 
   const [isModalTransacaoOpen, setIsModalTransacaoOpen] = useState(false)
   const [isModalFaturaOpen, setIsModalFaturaOpen] = useState(false)
+  const [isModalZerarOpen, setIsModalZerarOpen] = useState(false)
   const [editingTransacao, setEditingTransacao] = useState(null)
   const [editingFatura, setEditingFatura] = useState(null)
+
+  // Estados para confirmação de zerar dados
+  const [confirmacaoZerar, setConfirmacaoZerar] = useState({
+    etapa: 1, // 1 = primeira confirmação, 2 = segunda confirmação
+    tipo: '', // 'tudo', 'transacoes', 'faturas'
+    textoConfirmacao: ''
+  })
 
   // Estados dos formulários
   const [formTransacao, setFormTransacao] = useState({
@@ -77,7 +26,8 @@ function Financeiro() {
     descricao: '',
     valor: '',
     tipo: 'entrada',
-    categoria: ''
+    categoria: '',
+    aluno_id: ''
   })
 
   const [formFatura, setFormFatura] = useState({
@@ -86,9 +36,62 @@ function Financeiro() {
     dataVencimento: '',
     tipo: 'receber',
     status: 'pendente',
+    categoria: '',
+    aluno_id: '',
     numeroParcelas: 1,
     temParcelas: false
   })
+
+  const formatDateBR = (dateString) => {
+    if (!dateString) return ''
+    const [year, month, day] = dateString.split('-')
+    return new Date(year, month - 1, day).toLocaleDateString('pt-BR')
+  }
+
+  // Carregar dados iniciais
+  useEffect(() => {
+    // Verificar se as APIs estão disponíveis
+    if (!window.api || !window.api.transacoes || !window.api.faturas) {
+      console.error('APIs não disponíveis. Reinicie o aplicativo.')
+      setLoading(false)
+      return
+    }
+
+    loadData()
+  }, [])
+
+  const loadData = async () => {
+    try {
+      setLoading(true)
+
+      // Verificar novamente se as APIs estão disponíveis
+      if (
+        !window.api?.transacoes?.getAll ||
+        !window.api?.faturas?.getAll ||
+        !window.api?.alunos?.getAll
+      ) {
+        throw new Error('APIs não estão disponíveis')
+      }
+
+      const [transacoesData, faturasData, alunosData] = await Promise.all([
+        window.api.transacoes.getAll(),
+        window.api.faturas.getAll(),
+        window.api.alunos.getAll()
+      ])
+
+      setTransacoes(transacoesData || [])
+      setFaturas(faturasData || [])
+      setAlunos(alunosData || [])
+    } catch (error) {
+      console.error('Erro ao carregar dados:', error)
+
+      alert(
+        'Erro ao carregar dados financeiros. Verifique se o aplicativo foi reiniciado após as alterações.'
+      )
+    } finally {
+      setLoading(false)
+    }
+  }
 
   // Calcular saldo total
   const calcularSaldo = () => {
@@ -115,31 +118,35 @@ function Financeiro() {
     const { name, value } = e.target
     setFormTransacao((prev) => ({
       ...prev,
-      [name]: name === 'valor' ? parseFloat(value) || '' : value
+      [name]: name === 'valor' ? value : value
     }))
   }
 
-  const handleSaveTransacao = () => {
+  const handleSaveTransacao = async () => {
     if (!formTransacao.data || !formTransacao.descricao || !formTransacao.valor) {
       alert('Preencha todos os campos obrigatórios')
       return
     }
 
-    if (editingTransacao) {
-      setTransacoes((prev) =>
-        prev.map((t) =>
-          t.id === editingTransacao.id ? { ...editingTransacao, ...formTransacao } : t
-        )
-      )
-    } else {
-      const novaTransacao = {
-        id: Math.max(...transacoes.map((t) => t.id)) + 1,
-        ...formTransacao
+    try {
+      const transacaoData = {
+        ...formTransacao,
+        valor: parseFloat(formTransacao.valor.toString().replace(',', '.')) || 0,
+        aluno_id: formTransacao.aluno_id || null
       }
-      setTransacoes((prev) => [...prev, novaTransacao])
-    }
 
-    handleCancelTransacao()
+      if (editingTransacao) {
+        await window.api.transacoes.update(editingTransacao.id, transacaoData)
+      } else {
+        await window.api.transacoes.create(transacaoData)
+      }
+
+      await loadData()
+      handleCancelTransacao()
+    } catch (error) {
+      console.error('Erro ao salvar transação:', error)
+      alert('Erro ao salvar transação')
+    }
   }
 
   const handleCancelTransacao = () => {
@@ -148,7 +155,8 @@ function Financeiro() {
       descricao: '',
       valor: '',
       tipo: 'entrada',
-      categoria: ''
+      categoria: '',
+      aluno_id: ''
     })
     setEditingTransacao(null)
     setIsModalTransacaoOpen(false)
@@ -159,58 +167,66 @@ function Financeiro() {
     const { name, value } = e.target
     setFormFatura((prev) => ({
       ...prev,
-      [name]: name === 'valor' ? parseFloat(value) || '' : value
+      [name]: name === 'valor' ? value : value
     }))
   }
 
-  const handleSaveFatura = () => {
+  const handleSaveFatura = async () => {
     if (!formFatura.descricao || !formFatura.valor || !formFatura.dataVencimento) {
       alert('Preencha todos os campos obrigatórios')
       return
     }
 
-    if (editingFatura) {
-      setFaturas((prev) =>
-        prev.map((f) => (f.id === editingFatura.id ? { ...editingFatura, ...formFatura } : f))
-      )
-    } else {
-      if (formFatura.temParcelas && formFatura.numeroParcelas > 1) {
-        // Criar múltiplas faturas (parcelas)
-        const valorParcela = formFatura.valor / formFatura.numeroParcelas
-        const novasFaturas = []
+    try {
+      const valor = parseFloat(formFatura.valor.toString().replace(',', '.')) || 0
 
-        for (let i = 0; i < formFatura.numeroParcelas; i++) {
-          const dataVencimento = new Date(formFatura.dataVencimento)
-          dataVencimento.setMonth(dataVencimento.getMonth() + i)
-
-          const novaFatura = {
-            id: Math.max(...faturas.map((f) => f.id), 0) + i + 1,
-            descricao: `${formFatura.descricao} (${i + 1}/${formFatura.numeroParcelas})`,
-            valor: valorParcela,
-            dataVencimento: dataVencimento.toISOString().split('T')[0],
-            tipo: formFatura.tipo,
-            status: formFatura.status,
-            parcela: i + 1,
-            totalParcelas: formFatura.numeroParcelas
-          }
-
-          novasFaturas.push(novaFatura)
-        }
-
-        setFaturas((prev) => [...prev, ...novasFaturas])
-      } else {
-        // Criar fatura única
-        const novaFatura = {
-          id: Math.max(...faturas.map((f) => f.id), 0) + 1,
+      if (editingFatura) {
+        const faturaData = {
           ...formFatura,
-          numeroParcelas: undefined,
-          temParcelas: undefined
+          valor,
+          aluno_id: formFatura.aluno_id || null
         }
-        setFaturas((prev) => [...prev, novaFatura])
-      }
-    }
+        await window.api.faturas.update(editingFatura.id, faturaData)
+      } else {
+        if (formFatura.temParcelas && formFatura.numeroParcelas > 1) {
+          // Criar múltiplas faturas (parcelas)
+          const valorParcela = valor / formFatura.numeroParcelas
 
-    handleCancelFatura()
+          for (let i = 0; i < formFatura.numeroParcelas; i++) {
+            const dataVencimento = new Date(formFatura.dataVencimento)
+            dataVencimento.setMonth(dataVencimento.getMonth() + i)
+
+            const faturaData = {
+              descricao: `${formFatura.descricao} (${i + 1}/${formFatura.numeroParcelas})`,
+              valor: valorParcela,
+              dataVencimento: dataVencimento.toISOString().split('T')[0],
+              tipo: formFatura.tipo,
+              status: formFatura.status,
+              categoria: formFatura.categoria,
+              aluno_id: formFatura.aluno_id || null,
+              parcela: i + 1,
+              totalParcelas: formFatura.numeroParcelas
+            }
+
+            await window.api.faturas.create(faturaData)
+          }
+        } else {
+          // Criar fatura única
+          const faturaData = {
+            ...formFatura,
+            valor,
+            aluno_id: formFatura.aluno_id || null
+          }
+          await window.api.faturas.create(faturaData)
+        }
+      }
+
+      await loadData()
+      handleCancelFatura()
+    } catch (error) {
+      console.error('Erro ao salvar fatura:', error)
+      alert('Erro ao salvar fatura')
+    }
   }
 
   const handleCancelFatura = () => {
@@ -220,6 +236,8 @@ function Financeiro() {
       dataVencimento: '',
       tipo: 'receber',
       status: 'pendente',
+      categoria: '',
+      aluno_id: '',
       numeroParcelas: 1,
       temParcelas: false
     })
@@ -227,47 +245,201 @@ function Financeiro() {
     setIsModalFaturaOpen(false)
   }
 
-  const { entradas, saidas } = calcularTotais()
+  const handleMarcarContaPaga = async (fatura) => {
+    try {
+      await window.api.faturas.marcarPaga(fatura.id)
+      await loadData()
+    } catch (error) {
+      console.error('Erro ao marcar conta como paga:', error)
+      alert('Erro ao marcar conta como paga')
+    }
+  }
 
-  // Adicionar esta função após as outras funções de handler
-  const handleMarcarContaPaga = (fatura) => {
-    // Atualizar status da fatura
-    setFaturas((prev) => prev.map((f) => (f.id === fatura.id ? { ...f, status: 'pago' } : f)))
+  const handleGerarMensalidades = async () => {
+    try {
+      const faturasCriadas = await window.api.faturas.gerarMensalidades()
+      if (faturasCriadas.length > 0) {
+        alert(`${faturasCriadas.length} faturas de mensalidade geradas com sucesso!`)
+        await loadData()
+      } else {
+        alert('Nenhuma nova fatura de mensalidade foi gerada.')
+      }
+    } catch (error) {
+      console.error('Erro ao gerar mensalidades:', error)
+      alert('Erro ao gerar faturas de mensalidade')
+    }
+  }
 
-    // Criar transação no fluxo de caixa
-    const novaTransacao = {
-      id: Math.max(...transacoes.map((t) => t.id)) + 1,
-      data: new Date().toISOString().split('T')[0], // Data atual
-      descricao: fatura.descricao,
-      valor: fatura.valor,
-      tipo: fatura.tipo === 'receber' ? 'entrada' : 'saida',
-      categoria: fatura.tipo === 'receber' ? 'Recebimento' : 'Pagamento'
+  // Handlers para zerar dados
+  const handleIniciarZerar = (tipo) => {
+    let titulo = ''
+    let textoConfirmacao = ''
+
+    switch (tipo) {
+      case 'tudo':
+        titulo = 'ZERAR TODOS OS DADOS FINANCEIROS'
+        textoConfirmacao = 'ZERAR TUDO'
+        break
+      case 'transacoes':
+        titulo = 'ZERAR FLUXO DE CAIXA'
+        textoConfirmacao = 'ZERAR CAIXA'
+        break
+      case 'faturas':
+        titulo = 'ZERAR FATURAS'
+        textoConfirmacao = 'ZERAR FATURAS'
+        break
     }
 
-    setTransacoes((prev) => [...prev, novaTransacao])
+    setConfirmacaoZerar({
+      etapa: 1,
+      tipo,
+      titulo,
+      textoConfirmacao: textoConfirmacao,
+      textoDigitado: ''
+    })
+    setIsModalZerarOpen(true)
+  }
+
+  const handleConfirmarZerar = async () => {
+    if (confirmacaoZerar.etapa === 1) {
+      // Primeira confirmação - avançar para segunda etapa
+      setConfirmacaoZerar((prev) => ({
+        ...prev,
+        etapa: 2,
+        textoDigitado: ''
+      }))
+    } else {
+      // Segunda confirmação - verificar texto e executar
+      if (confirmacaoZerar.textoDigitado !== confirmacaoZerar.textoConfirmacao) {
+        alert('Texto de confirmação incorreto!')
+        return
+      }
+
+      try {
+        switch (confirmacaoZerar.tipo) {
+          case 'tudo':
+            await Promise.all([window.api.transacoes.deleteAll(), window.api.faturas.deleteAll()])
+            alert('Todos os dados financeiros foram zerados!')
+            break
+          case 'transacoes':
+            await window.api.transacoes.deleteAll()
+            alert('Fluxo de caixa zerado!')
+            break
+          case 'faturas':
+            await window.api.faturas.deleteAll()
+            alert('Faturas zeradas!')
+            break
+        }
+
+        await loadData()
+        handleCancelZerar()
+      } catch (error) {
+        console.error('Erro ao zerar dados:', error)
+        alert('Erro ao zerar dados!')
+      }
+    }
+  }
+
+  const handleCancelZerar = () => {
+    setConfirmacaoZerar({
+      etapa: 1,
+      tipo: '',
+      titulo: '',
+      textoConfirmacao: '',
+      textoDigitado: ''
+    })
+    setIsModalZerarOpen(false)
+  }
+
+  const { entradas, saidas } = calcularTotais()
+
+  if (loading) {
+    return (
+      <div className="h-screen w-full p-6 text-gray-200 flex items-center justify-center">
+        <div className="text-xl">Carregando dados financeiros...</div>
+      </div>
+    )
   }
 
   return (
     <div className="h-screen w-full p-6 text-gray-200">
-      <h1 className="text-4xl font-bold mb-6 opacity-35">Financeiro</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-4xl font-bold opacity-35">Financeiro</h1>
+
+        <div className="flex gap-3">
+          <button
+            onClick={handleGerarMensalidades}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+          >
+            Gerar Mensalidades
+          </button>
+
+          {/* Dropdown para zerar dados */}
+          <div className="relative group">
+            <button className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors">
+              ⚠️ Zerar Dados
+            </button>
+
+            {/* Menu dropdown */}
+            <div className="absolute right-0 top-full mt-1 w-48 bg-stone-800 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+              <div className="py-1">
+                <button
+                  onClick={() => handleIniciarZerar('transacoes')}
+                  className="block w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-stone-700 transition-colors"
+                >
+                  🗑️ Zerar Fluxo de Caixa
+                </button>
+                <button
+                  onClick={() => handleIniciarZerar('faturas')}
+                  className="block w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-stone-700 transition-colors"
+                >
+                  🗑️ Zerar Faturas
+                </button>
+                <hr className="border-stone-600 my-1" />
+                <button
+                  onClick={() => handleIniciarZerar('tudo')}
+                  className="block w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-stone-700 transition-colors font-semibold"
+                >
+                  💥 Zerar Tudo
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         {/* Cards de resumo */}
         <div className="bg-green-600 rounded-lg p-4 shadow-lg">
           <h3 className="text-lg font-semibold mb-2">Total Entradas</h3>
-          <p className="text-2xl font-bold">R$ {entradas.toFixed(2)}</p>
+          <p className="text-2xl font-bold">
+            {new Intl.NumberFormat('pt-BR', {
+              style: 'currency',
+              currency: 'BRL'
+            }).format(entradas)}
+          </p>
         </div>
 
         <div className="bg-red-600 rounded-lg p-4 shadow-lg">
           <h3 className="text-lg font-semibold mb-2">Total Saídas</h3>
-          <p className="text-2xl font-bold">R$ {saidas.toFixed(2)}</p>
+          <p className="text-2xl font-bold">
+            {new Intl.NumberFormat('pt-BR', {
+              style: 'currency',
+              currency: 'BRL'
+            }).format(saidas)}
+          </p>
         </div>
 
         <div
           className={`rounded-lg p-4 shadow-lg ${calcularSaldo() >= 0 ? 'bg-blue-600' : 'bg-orange-600'}`}
         >
           <h3 className="text-lg font-semibold mb-2">Saldo Atual</h3>
-          <p className="text-2xl font-bold">R$ {calcularSaldo().toFixed(2)}</p>
+          <p className="text-2xl font-bold">
+            {new Intl.NumberFormat('pt-BR', {
+              style: 'currency',
+              currency: 'BRL'
+            }).format(calcularSaldo())}
+          </p>
         </div>
       </div>
 
@@ -300,15 +472,27 @@ function Financeiro() {
                           <span
                             className={`font-bold ${transacao.tipo === 'entrada' ? 'text-green-400' : 'text-red-400'}`}
                           >
-                            {transacao.tipo === 'entrada' ? '+' : '-'} R${' '}
-                            {transacao.valor.toFixed(2)}
+                            {transacao.tipo === 'entrada' ? '+' : '-'}{' '}
+                            {new Intl.NumberFormat('pt-BR', {
+                              style: 'currency',
+                              currency: 'BRL'
+                            }).format(transacao.valor)}
                           </span>
                         </div>
                         <div className="flex justify-between text-sm text-gray-300">
-                          <span>{new Date(transacao.data).toLocaleDateString('pt-BR')}</span>
-                          <span className="bg-stone-500 px-2 py-1 rounded text-xs">
-                            {transacao.categoria}
-                          </span>
+                          <span>{formatDateBR(transacao.data)}</span>
+                          <div className="flex gap-2">
+                            {transacao.categoria && (
+                              <span className="bg-stone-500 px-2 py-1 rounded text-xs">
+                                {transacao.categoria}
+                              </span>
+                            )}
+                            {transacao.aluno_nome && (
+                              <span className="bg-blue-500 px-2 py-1 rounded text-xs">
+                                {transacao.aluno_nome}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -344,12 +528,15 @@ function Financeiro() {
                         <span
                           className={`font-bold ${fatura.tipo === 'receber' ? 'text-green-400' : 'text-red-400'}`}
                         >
-                          R$ {fatura.valor.toFixed(2)}
+                          {new Intl.NumberFormat('pt-BR', {
+                            style: 'currency',
+                            currency: 'BRL'
+                          }).format(fatura.valor)}
                         </span>
                       </div>
                       <div className="flex justify-between items-center text-sm mb-3">
                         <span className="text-gray-300">
-                          Vence: {new Date(fatura.dataVencimento).toLocaleDateString('pt-BR')}
+                          Vence: {formatDateBR(fatura.dataVencimento)}
                         </span>
                         <div className="flex gap-2">
                           <span
@@ -366,8 +553,21 @@ function Financeiro() {
                           >
                             {fatura.status === 'pendente' ? 'Pendente' : 'Pago'}
                           </span>
+                          {fatura.categoria && (
+                            <span className="bg-stone-500 px-2 py-1 rounded text-xs">
+                              {fatura.categoria}
+                            </span>
+                          )}
                         </div>
                       </div>
+
+                      {fatura.aluno_nome && (
+                        <div className="mb-2">
+                          <span className="bg-blue-500 px-2 py-1 rounded text-xs">
+                            {fatura.aluno_nome}
+                          </span>
+                        </div>
+                      )}
 
                       {/* Botão para marcar como pago/recebido */}
                       {fatura.status === 'pendente' && (
@@ -380,7 +580,7 @@ function Financeiro() {
                                 : 'bg-blue-600 hover:bg-blue-700 text-white'
                             }`}
                           >
-                            {fatura.tipo === 'receber' ? 'R$ Conta Recebida' : 'R$ Conta Paga'}
+                            {fatura.tipo === 'receber' ? 'Marcar Recebido' : 'Marcar Pago'}
                           </button>
                         </div>
                       )}
@@ -480,6 +680,25 @@ function Financeiro() {
               />
             </div>
           </div>
+
+          <div>
+            <label className="block text-sm font-medium text-stone-700 mb-1">
+              Aluno (opcional)
+            </label>
+            <select
+              name="aluno_id"
+              value={formTransacao.aluno_id}
+              onChange={handleInputTransacao}
+              className="w-full px-3 py-2 border border-stone-300 text-stone-700 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-500"
+            >
+              <option value="">Selecione um aluno (opcional)</option>
+              {alunos.map((aluno) => (
+                <option key={aluno.id} value={aluno.id}>
+                  {aluno.nome}
+                </option>
+              ))}
+            </select>
+          </div>
         </form>
       </Modal>
 
@@ -573,6 +792,39 @@ function Financeiro() {
             </div>
           </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-1">Categoria</label>
+              <input
+                type="text"
+                name="categoria"
+                value={formFatura.categoria}
+                onChange={handleInputFatura}
+                className="w-full px-3 py-2 border border-stone-300 text-stone-700 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-500"
+                placeholder="Ex: Mensalidade, Aluguel..."
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-1">
+                Aluno (opcional)
+              </label>
+              <select
+                name="aluno_id"
+                value={formFatura.aluno_id}
+                onChange={handleInputFatura}
+                className="w-full px-3 py-2 border border-stone-300 text-stone-700 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-500"
+              >
+                <option value="">Selecione um aluno (opcional)</option>
+                {alunos.map((aluno) => (
+                  <option key={aluno.id} value={aluno.id}>
+                    {aluno.nome}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
           {/* Seção de Parcelas */}
           <div className="border-t border-stone-300 pt-4">
             <div className="flex items-center mb-4">
@@ -615,10 +867,16 @@ function Financeiro() {
                 <div className="flex flex-col justify-end">
                   <div className="bg-stone-100 p-3 rounded-md">
                     <p className="text-sm text-stone-600">
-                      <strong>Valor por parcela:</strong> R${' '}
+                      <strong>Valor por parcela:</strong>{' '}
                       {formFatura.valor && formFatura.numeroParcelas
-                        ? (formFatura.valor / formFatura.numeroParcelas).toFixed(2)
-                        : '0,00'}
+                        ? new Intl.NumberFormat('pt-BR', {
+                            style: 'currency',
+                            currency: 'BRL'
+                          }).format(
+                            parseFloat(formFatura.valor.toString().replace(',', '.')) /
+                              formFatura.numeroParcelas
+                          )
+                        : 'R$ 0,00'}
                     </p>
                     <p className="text-xs text-stone-500 mt-1">
                       Vencimentos mensais a partir da data informada
@@ -629,6 +887,124 @@ function Financeiro() {
             )}
           </div>
         </form>
+      </Modal>
+
+      {/* Modal Zerar Dados */}
+      <Modal
+        isOpen={isModalZerarOpen}
+        onClose={handleCancelZerar}
+        title={`⚠️ ${confirmacaoZerar.titulo}`}
+        size="md"
+        footer={
+          <>
+            <Modal.Button variant="outline" onClick={handleCancelZerar}>
+              Cancelar
+            </Modal.Button>
+            <Modal.Button
+              variant="danger"
+              onClick={handleConfirmarZerar}
+              disabled={
+                confirmacaoZerar.etapa === 2 &&
+                confirmacaoZerar.textoDigitado !== confirmacaoZerar.textoConfirmacao
+              }
+            >
+              {confirmacaoZerar.etapa === 1 ? 'Continuar' : 'CONFIRMAR EXCLUSÃO'}
+            </Modal.Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          {confirmacaoZerar.etapa === 1 ? (
+            // Primeira confirmação
+            <div className="text-center">
+              <div className="text-6xl mb-4">⚠️</div>
+              <h3 className="text-xl font-bold text-red-600 mb-4">ATENÇÃO: AÇÃO IRREVERSÍVEL!</h3>
+
+              {confirmacaoZerar.tipo === 'tudo' && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                  <p className="text-red-800 font-semibold mb-2">
+                    Você está prestes a ZERAR TODOS os dados financeiros:
+                  </p>
+                  <ul className="text-red-700 text-sm space-y-1">
+                    <li>• Todas as transações do fluxo de caixa</li>
+                    <li>• Todas as faturas e contas</li>
+                    <li>• Todo o histórico financeiro</li>
+                  </ul>
+                </div>
+              )}
+
+              {confirmacaoZerar.tipo === 'transacoes' && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                  <p className="text-red-800 font-semibold mb-2">
+                    Você está prestes a ZERAR o fluxo de caixa:
+                  </p>
+                  <ul className="text-red-700 text-sm space-y-1">
+                    <li>• Todas as transações de entrada</li>
+                    <li>• Todas as transações de saída</li>
+                    <li>• Todo o histórico do fluxo de caixa</li>
+                  </ul>
+                </div>
+              )}
+
+              {confirmacaoZerar.tipo === 'faturas' && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                  <p className="text-red-800 font-semibold mb-2">
+                    Você está prestes a ZERAR todas as faturas:
+                  </p>
+                  <ul className="text-red-700 text-sm space-y-1">
+                    <li>• Todas as faturas a receber</li>
+                    <li>• Todas as faturas a pagar</li>
+                    <li>• Todo o histórico de faturas</li>
+                  </ul>
+                </div>
+              )}
+
+              <p className="text-stone-600 text-sm">
+                Esta ação NÃO PODE ser desfeita. Tem certeza que deseja continuar?
+              </p>
+            </div>
+          ) : (
+            // Segunda confirmação
+            <div className="text-center">
+              <div className="text-6xl mb-4">🔥</div>
+              <h3 className="text-xl font-bold text-red-600 mb-4">CONFIRMAÇÃO FINAL</h3>
+
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                <p className="text-red-800 font-semibold mb-3">
+                  Para confirmar a exclusão, digite exatamente:
+                </p>
+                <div className="bg-red-100 border border-red-300 rounded px-3 py-2 mb-3">
+                  <code className="text-red-800 font-bold text-lg">
+                    {confirmacaoZerar.textoConfirmacao}
+                  </code>
+                </div>
+              </div>
+
+              <input
+                type="text"
+                value={confirmacaoZerar.textoDigitado}
+                onChange={(e) =>
+                  setConfirmacaoZerar((prev) => ({
+                    ...prev,
+                    textoDigitado: e.target.value
+                  }))
+                }
+                className="w-full px-3 py-2 border border-red-300 text-stone-700 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 text-center font-mono"
+                placeholder="Digite o texto de confirmação..."
+                autoFocus
+              />
+
+              {confirmacaoZerar.textoDigitado &&
+                confirmacaoZerar.textoDigitado !== confirmacaoZerar.textoConfirmacao && (
+                  <p className="text-red-500 text-sm mt-2">❌ Texto incorreto</p>
+                )}
+
+              {confirmacaoZerar.textoDigitado === confirmacaoZerar.textoConfirmacao && (
+                <p className="text-green-600 text-sm mt-2">✅ Texto correto - Pode prosseguir</p>
+              )}
+            </div>
+          )}
+        </div>
       </Modal>
     </div>
   )

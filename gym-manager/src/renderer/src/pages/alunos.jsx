@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import Card from '../components/Card'
 import Modal from '../components/Modal'
 
@@ -9,6 +9,7 @@ function Alunos() {
   const [filterStatus, setFilterStatus] = useState('Todos')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingAluno, setEditingAluno] = useState(null)
+  const nomeInputRef = useRef(null)
 
   // Estado do formulário
   const [formData, setFormData] = useState({
@@ -93,16 +94,16 @@ function Alunos() {
   })
 
   // Função para lidar com mudanças no formulário
-  const handleInputChange = (e) => {
+  const handleInputChange = useCallback((e) => {
     const { name, value } = e.target
     setFormData((prev) => ({
       ...prev,
       [name]: value
     }))
-  }
+  }, [])
 
   // Função para lidar com mudanças nos checkboxes dos dias
-  const handleDiaChange = (dia) => {
+  const handleDiaChange = useCallback((dia) => {
     setFormData((prev) => {
       const novosDiasTreino = prev.diasTreino.includes(dia)
         ? prev.diasTreino.filter((d) => d !== dia)
@@ -126,20 +127,20 @@ function Alunos() {
         horariosTreino: novosHorariosTreino
       }
     })
-  }
+  }, [])
 
   // Função para alterar horário de um dia específico
-  const handleHorarioChange = (dia, novoHorario) => {
+  const handleHorarioChange = useCallback((dia, novoHorario) => {
     setFormData((prev) => ({
       ...prev,
       horariosTreino: prev.horariosTreino.map((h) =>
         h.dia === dia ? { ...h, horario: novoHorario } : h
       )
     }))
-  }
+  }, [])
 
   // Função para abrir modal de novo aluno
-  const handleNovoAluno = () => {
+  const handleNovoAluno = useCallback(() => {
     setEditingAluno(null)
     setFormData({
       nome: '',
@@ -153,24 +154,38 @@ function Alunos() {
       mensalidade: ''
     })
     setIsModalOpen(true)
-  }
+
+    // Focar no input nome após o modal abrir
+    setTimeout(() => {
+      if (nomeInputRef.current) {
+        nomeInputRef.current.focus()
+      }
+    }, 300)
+  }, [])
 
   // Função para abrir modal de edição
-  const handleEditarAluno = (aluno) => {
+  const handleEditarAluno = useCallback((aluno) => {
     setEditingAluno(aluno)
     setFormData({
       nome: aluno.nome,
       nascimento: aluno.nascimento || '',
       telefone: aluno.telefone,
       email: aluno.email,
-      diasTreino: [...aluno.diasTreino],
+      diasTreino: [...(aluno.diasTreino || [])],
       horariosTreino: [...(aluno.horariosTreino || [])],
       status: aluno.status,
       corPadrao: aluno.corPadrao || '#4CAF50',
       mensalidade: aluno.mensalidade || ''
     })
     setIsModalOpen(true)
-  }
+
+    // Focar no input nome após o modal abrir
+    setTimeout(() => {
+      if (nomeInputRef.current) {
+        nomeInputRef.current.focus()
+      }
+    }, 300)
+  }, [])
 
   // Função para salvar aluno (novo ou editado)
   const handleSaveAluno = async () => {
@@ -241,7 +256,7 @@ function Alunos() {
   }
 
   // Função para cancelar
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     setFormData({
       nome: '',
       nascimento: '',
@@ -255,7 +270,17 @@ function Alunos() {
     })
     setEditingAluno(null)
     setIsModalOpen(false)
-  }
+  }, [])
+
+  // Função para garantir que um input seja editável
+  const ensureInputEditable = useCallback((e) => {
+    const target = e.target
+    target.removeAttribute('readonly')
+    target.removeAttribute('disabled')
+    target.style.pointerEvents = 'auto'
+    target.style.userSelect = 'auto'
+    target.style.webkitUserSelect = 'auto'
+  }, [])
 
   if (loading) {
     return (
@@ -346,7 +371,7 @@ function Alunos() {
           </>
         }
       >
-        <form className="space-y-6">
+        <div className="space-y-6" style={{ position: 'relative', zIndex: 1 }}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Nome */}
             <div>
@@ -354,14 +379,24 @@ function Alunos() {
                 Nome Completo *
               </label>
               <input
+                ref={nomeInputRef}
                 type="text"
                 id="nome"
                 name="nome"
                 value={formData.nome}
                 onChange={handleInputChange}
+                onFocus={ensureInputEditable}
+                onMouseDown={ensureInputEditable}
+                onClick={ensureInputEditable}
                 className="w-full px-3 py-2 border border-stone-300 text-stone-700 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500"
                 placeholder="Digite o nome completo"
                 required
+                autoComplete="off"
+                style={{
+                  pointerEvents: 'auto',
+                  userSelect: 'auto',
+                  WebkitUserSelect: 'auto'
+                }}
               />
             </div>
 
@@ -376,8 +411,9 @@ function Alunos() {
                 name="nascimento"
                 value={formData.nascimento}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-stone-300 rounded-md text-stone-700 focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500"
+                className="w-full px-3 py-2 border border-stone-300 rounded-md text-stone-700 focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500 relative z-10"
                 required
+                autoComplete="off"
               />
               {formData.nascimento && (
                 <p className="text-sm text-stone-600 mt-1">
@@ -399,9 +435,10 @@ function Alunos() {
                 name="email"
                 value={formData.email}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border text-stone-700 border-stone-300 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500"
+                className="w-full px-3 py-2 border text-stone-700 border-stone-300 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500 relative z-10"
                 placeholder="Digite o email"
                 required
+                autoComplete="off"
               />
             </div>
 
@@ -416,9 +453,10 @@ function Alunos() {
                 name="telefone"
                 value={formData.telefone}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border text-stone-700 border-stone-300 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500"
+                className="w-full px-3 py-2 border text-stone-700 border-stone-300 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500 relative z-10"
                 placeholder="(11) 99999-9999"
                 required
+                autoComplete="off"
               />
             </div>
           </div>
@@ -443,14 +481,14 @@ function Alunos() {
                   formData.horariosTreino.find((h) => h.dia === dia.key)?.horario || '08:00'
 
                 return (
-                  <div key={dia.key} className="border border-stone-300 rounded-lg p-3">
+                  <div key={dia.key} className="border border-stone-300 rounded-lg p-3 relative z-10">
                     <div className="flex items-center mb-2">
                       <input
                         type="checkbox"
                         id={dia.key}
                         checked={isSelected}
                         onChange={() => handleDiaChange(dia.key)}
-                        className="mr-2 w-4 h-4 text-lime-600 bg-gray-100 border-gray-300 rounded focus:ring-lime-500"
+                        className="mr-2 w-4 h-4 text-lime-600 bg-gray-100 border-gray-300 rounded focus:ring-lime-500 relative z-10"
                       />
                       <label htmlFor={dia.key} className="text-sm font-medium text-stone-700">
                         {dia.label}
@@ -463,7 +501,7 @@ function Alunos() {
                         <select
                           value={horarioAtual}
                           onChange={(e) => handleHorarioChange(dia.key, e.target.value)}
-                          className="w-full px-2 py-1 text-xs border border-stone-300 text-stone-700 rounded focus:outline-none focus:ring-1 focus:ring-lime-500"
+                          className="w-full px-2 py-1 text-xs border border-stone-300 text-stone-700 rounded focus:outline-none focus:ring-1 focus:ring-lime-500 relative z-10"
                         >
                           {horariosDisponiveis.map((horario) => (
                             <option key={horario} value={horario}>
@@ -490,7 +528,7 @@ function Alunos() {
                 name="status"
                 value={formData.status}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border text-stone-700 border-stone-300 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500"
+                className="w-full px-3 py-2 border text-stone-700 border-stone-300 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500 relative z-10"
               >
                 <option value="Ativo">Ativo</option>
                 <option value="Inativo">Inativo</option>
@@ -509,7 +547,7 @@ function Alunos() {
                   name="corPadrao"
                   value={formData.corPadrao}
                   onChange={handleInputChange}
-                  className="w-12 h-10 border border-stone-300 rounded-md cursor-pointer focus:outline-none focus:ring-2 focus:ring-lime-500"
+                  className="w-12 h-10 border border-stone-300 rounded-md cursor-pointer focus:outline-none focus:ring-2 focus:ring-lime-500 relative z-10"
                 />
                 <div className="flex items-center gap-2">
                   <div
@@ -533,16 +571,17 @@ function Alunos() {
               name="mensalidade"
               value={formData.mensalidade}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-stone-300 text-stone-700 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500"
+              className="w-full px-3 py-2 border border-stone-300 text-stone-700 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500 relative z-10"
               placeholder="Valor da mensalidade"
               step="0.01"
               min="0"
               required
+              autoComplete="off"
             />
           </div>
 
           <div className="text-sm text-stone-500 mt-4">* Campos obrigatórios</div>
-        </form>
+        </div>
       </Modal>
     </div>
   )

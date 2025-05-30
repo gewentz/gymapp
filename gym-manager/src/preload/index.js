@@ -10,10 +10,35 @@ const api = {
     update: (id, alunoData) => ipcRenderer.invoke('alunos:update', id, alunoData),
     delete: (id) => ipcRenderer.invoke('alunos:delete', id)
   },
+  transacoes: {
+    getAll: () => ipcRenderer.invoke('transacoes:getAll'),
+    create: (transacaoData) => ipcRenderer.invoke('transacoes:create', transacaoData),
+    update: (id, transacaoData) => ipcRenderer.invoke('transacoes:update', id, transacaoData),
+    delete: (id) => ipcRenderer.invoke('transacoes:delete', id),
+    deleteAll: () => ipcRenderer.invoke('transacoes:deleteAll')
+  },
+  faturas: {
+    getAll: () => ipcRenderer.invoke('faturas:getAll'),
+    create: (faturaData) => ipcRenderer.invoke('faturas:create', faturaData),
+    update: (id, faturaData) => ipcRenderer.invoke('faturas:update', id, faturaData),
+    delete: (id) => ipcRenderer.invoke('faturas:delete', id),
+    gerarMensalidades: () => ipcRenderer.invoke('faturas:gerarMensalidades'),
+    marcarPaga: (faturaId) => ipcRenderer.invoke('faturas:marcarPaga', faturaId),
+    deleteAll: () => ipcRenderer.invoke('faturas:deleteAll')
+  },
   utils: {
     formatDate: (date) => ipcRenderer.invoke('utils:formatDate', date),
     calculateAge: (birthDate) => ipcRenderer.invoke('utils:calculateAge', birthDate),
-    getCurrentDate: () => ipcRenderer.invoke('utils:getCurrentDate')
+    getCurrentDate: () => ipcRenderer.invoke('utils:getCurrentDate'),
+    getCurrentDateBrazil: () => ipcRenderer.invoke('utils:getCurrentDateBrazil')
+  },
+  updater: {
+    checkForUpdates: () => ipcRenderer.invoke('updater:check-for-updates'),
+    downloadUpdate: () => ipcRenderer.invoke('updater:download-update'),
+    quitAndInstall: () => ipcRenderer.invoke('updater:quit-and-install'),
+    getVersion: () => ipcRenderer.invoke('updater:get-version'),
+    onMessage: (callback) => ipcRenderer.on('updater-message', callback),
+    removeAllListeners: () => ipcRenderer.removeAllListeners('updater-message')
   }
 }
 

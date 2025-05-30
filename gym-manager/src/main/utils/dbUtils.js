@@ -54,6 +54,25 @@ export const getCurrentDate = () => {
   return `${year}-${month}-${day}`
 }
 
+export const getCurrentDateBrazil = () => {
+  // Criar data atual no fuso horário do Brasil
+  const now = new Date()
+  const brazilTime = new Date(now.toLocaleString("en-US", {timeZone: "America/Sao_Paulo"}))
+
+  const year = brazilTime.getFullYear()
+  const month = String(brazilTime.getMonth() + 1).padStart(2, '0')
+  const day = String(brazilTime.getDate()).padStart(2, '0')
+
+  console.log(`Data atual Brasil: ${day}/${month}/${year}`) // Para debug
+  return `${year}-${month}-${day}`
+}
+
+export const getDateBrazil = (date = new Date()) => {
+  // Converter qualquer data para horário do Brasil
+  const brazilTime = new Date(date.toLocaleString("en-US", {timeZone: "America/Sao_Paulo"}))
+  return brazilTime
+}
+
 export const validateEmail = (email) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   return emailRegex.test(email)
@@ -62,4 +81,33 @@ export const validateEmail = (email) => {
 export const validatePhone = (phone) => {
   const phoneRegex = /^\(\d{2}\)\s\d{4,5}-\d{4}$/
   return phoneRegex.test(phone)
+}
+
+// Utilitários para valores monetários (evitar problemas de ponto flutuante)
+export const formatCurrency = (value) => {
+  if (typeof value !== 'number') return 'R$ 0,00'
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL'
+  }).format(value)
+}
+
+export const parseCurrency = (value) => {
+  if (typeof value === 'number') return value
+  if (typeof value === 'string') {
+    // Remove caracteres não numéricos exceto vírgula e ponto
+    const cleanValue = value.replace(/[^\d,.-]/g, '')
+    // Substitui vírgula por ponto
+    const normalizedValue = cleanValue.replace(',', '.')
+    return parseFloat(normalizedValue) || 0
+  }
+  return 0
+}
+
+export const centavosParaReais = (centavos) => {
+  return centavos / 100
+}
+
+export const reaisParaCentavos = (reais) => {
+  return Math.round(reais * 100)
 }
