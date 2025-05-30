@@ -10,6 +10,13 @@ const api = {
     update: (id, alunoData) => ipcRenderer.invoke('alunos:update', id, alunoData),
     delete: (id) => ipcRenderer.invoke('alunos:delete', id)
   },
+  historicos: {
+    getAll: () => ipcRenderer.invoke('historicos:getAll'),
+    getByAluno: (alunoId) => ipcRenderer.invoke('historicos:getByAluno', alunoId),
+    create: (historicoData) => ipcRenderer.invoke('historicos:create', historicoData),
+    update: (id, historicoData) => ipcRenderer.invoke('historicos:update', id, historicoData),
+    delete: (id) => ipcRenderer.invoke('historicos:delete', id)
+  },
   transacoes: {
     getAll: () => ipcRenderer.invoke('transacoes:getAll'),
     create: (transacaoData) => ipcRenderer.invoke('transacoes:create', transacaoData),

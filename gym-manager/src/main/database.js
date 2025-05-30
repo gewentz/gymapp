@@ -86,6 +86,20 @@ class Database {
         )
       `
 
+      const createHistoricosTable = `
+        CREATE TABLE IF NOT EXISTS historicos (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          aluno_id INTEGER NOT NULL,
+          data TEXT NOT NULL,
+          peso REAL NOT NULL,
+          treinoAtual TEXT NOT NULL,
+          fotoBalanca TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (aluno_id) REFERENCES alunos (id)
+        )
+      `
+
       this.db.serialize(() => {
         this.db.run(createAlunosTable, (err) => {
           if (err) {
@@ -112,6 +126,15 @@ class Database {
             return
           }
           console.log('Tabela faturas criada/verificada com sucesso')
+        })
+
+        this.db.run(createHistoricosTable, (err) => {
+          if (err) {
+            console.error('Erro ao criar tabela historicos:', err)
+            reject(err)
+            return
+          }
+          console.log('Tabela historicos criada/verificada com sucesso')
           resolve()
         })
       })
@@ -642,6 +665,107 @@ class Database {
           reject(err)
         } else {
           resolve({ deletedCount: this.changes })
+        }
+      })
+    })
+  }
+
+  // Adicionar métodos para históricos no final da classe Database
+
+  // Buscar todos os históricos
+  getAllHistoricos() {
+    return new Promise((resolve, reject) => {
+      const sql = `
+        SELECT h.*, a.nome as aluno_nome
+        FROM historicos h
+        LEFT JOIN alunos a ON h.aluno_id = a.id
+        ORDER BY h.data DESC
+      `
+
+      this.db.all(sql, (err, rows) => {
+        if (err) {
+          reject(err)
+        } else {
+          resolve(rows || [])
+        }
+      })
+    })
+  }
+
+  // Buscar históricos por aluno
+  getHistoricosByAluno(alunoId) {
+    return new Promise((resolve, reject) => {
+      const sql = `
+        SELECT h.*, a.nome as aluno_nome
+        FROM historicos h
+        LEFT JOIN alunos a ON h.aluno_id = a.id
+        WHERE h.aluno_id = ?
+        ORDER BY h.data DESC
+      `
+
+      this.db.all(sql, [alunoId], (err, rows) => {
+        if (err) {
+          reject(err)
+        } else {
+          resolve(rows || [])
+        }
+      })
+    })
+  }
+
+  // Criar novo histórico
+  createHistorico(historicoData) {
+    return new Promise((resolve, reject) => {
+      const { aluno_id, data, peso, treinoAtual, fotoBalanca } = historicoData
+
+      const sql = `
+        INSERT INTO historicos (aluno_id, data, peso, treinoAtual, fotoBalanca)
+        VALUES (?, ?, ?, ?, ?)
+      `
+
+      const params = [aluno_id, data, peso, treinoAtual, fotoBalanca]
+
+      this.db.run(sql, params, function(err) {
+        if (err) {
+          reject(err)
+        } else {
+          resolve({ id: this.lastID, ...historicoData })
+        }
+      })
+    })
+  }
+
+  // Atualizar histórico
+  updateHistorico(id, historicoData) {
+    return new Promise((resolve, reject) => {
+      const { data, peso, treinoAtual, fotoBalanca } = historicoData
+
+      const sql = `
+        UPDATE historicos SET
+          data = ?, peso = ?, treinoAtual = ?, fotoBalanca = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `
+
+      const params = [data, peso, treinoAtual, fotoBalanca, id]
+
+      this.db.run(sql, params, function(err) {
+        if (err) {
+          reject(err)
+        } else {
+          resolve({ id, ...historicoData })
+        }
+      })
+    })
+  }
+
+  // Deletar histórico
+  deleteHistorico(id) {
+    return new Promise((resolve, reject) => {
+      this.db.run('DELETE FROM historicos WHERE id = ?', [id], function(err) {
+        if (err) {
+          reject(err)
+        } else {
+          resolve({ deletedId: id, changes: this.changes })
         }
       })
     })

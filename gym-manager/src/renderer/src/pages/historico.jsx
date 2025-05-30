@@ -1,89 +1,16 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Modal from '../components/Modal'
 
 function Historico() {
-  // Dados mockados dos alunos (mesmo da página alunos)
-  const [alunos] = useState([
-    {
-      id: 1,
-      nome: 'João Silva',
-      email: 'joao@email.com'
-    },
-    {
-      id: 2,
-      nome: 'Maria Santos',
-      email: 'maria@email.com'
-    },
-    {
-      id: 3,
-      nome: 'Pedro Oliveira',
-      email: 'pedro@email.com'
-    },
-    {
-      id: 4,
-      nome: 'Ana Costa',
-      email: 'ana@email.com'
-    },
-    {
-      id: 5,
-      nome: 'Carlos Ferreira',
-      email: 'carlos@email.com'
-    },
-    {
-      id: 6,
-      nome: 'Lucia Mendes',
-      email: 'lucia@email.com'
-    }
-  ])
-
-  // Histórico de desempenho mockado
-  const [historicos, setHistoricos] = useState([
-    {
-      id: 1,
-      alunoId: 1,
-      data: '2024-01-15',
-      peso: 75.5,
-      treinoAtual: 'Treino A - Peito e Tríceps',
-      fotoBalanca: null
-    },
-    {
-      id: 2,
-      alunoId: 1,
-      data: '2024-01-22',
-      peso: 74.8,
-      treinoAtual: 'Treino B - Costas e Bíceps',
-      fotoBalanca: null
-    },
-    {
-      id: 3,
-      alunoId: 1,
-      data: '2024-01-29',
-      peso: 74.2,
-      treinoAtual: 'Treino C - Pernas',
-      fotoBalanca: null
-    },
-    {
-      id: 4,
-      alunoId: 2,
-      data: '2024-01-10',
-      peso: 62.3,
-      treinoAtual: 'Treino Funcional',
-      fotoBalanca: null
-    },
-    {
-      id: 5,
-      alunoId: 2,
-      data: '2024-01-17',
-      peso: 61.9,
-      treinoAtual: 'Treino Cardio + Força',
-      fotoBalanca: null
-    }
-  ])
-
+  const [alunos, setAlunos] = useState([])
+  const [historicos, setHistoricos] = useState([])
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [alunoSelecionado, setAlunoSelecionado] = useState(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingRegistro, setEditingRegistro] = useState(null)
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false)
+  const [selectedImage, setSelectedImage] = useState(null)
 
   // Estado do formulário
   const [formData, setFormData] = useState({
@@ -92,6 +19,28 @@ function Historico() {
     treinoAtual: '',
     fotoBalanca: null
   })
+
+  // Carregar dados iniciais
+  useEffect(() => {
+    loadData()
+  }, [])
+
+  const loadData = async () => {
+    try {
+      setLoading(true)
+      const [alunosData, historicosData] = await Promise.all([
+        window.api.alunos.getAll(),
+        window.api.historicos.getAll()
+      ])
+      setAlunos(alunosData)
+      setHistoricos(historicosData)
+    } catch (error) {
+      console.error('Erro ao carregar dados:', error)
+      alert('Erro ao carregar dados')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   // Filtrar alunos baseado na busca
   const alunosFiltrados = alunos.filter(
@@ -103,7 +52,7 @@ function Historico() {
   // Obter histórico do aluno selecionado
   const historicoAluno = alunoSelecionado
     ? historicos
-        .filter((h) => h.alunoId === alunoSelecionado.id)
+        .filter((h) => h.aluno_id === alunoSelecionado.id)
         .sort((a, b) => new Date(b.data) - new Date(a.data))
     : []
 
@@ -130,15 +79,29 @@ function Historico() {
     }
   }
 
+  // Nova função para remover a foto
+  const handleRemovePhoto = () => {
+    setFormData((prev) => ({
+      ...prev,
+      fotoBalanca: null
+    }))
+    // Limpar o input file
+    const fileInput = document.getElementById('fotoBalanca')
+    if (fileInput) {
+      fileInput.value = ''
+    }
+  }
+
   const handleSelecionarAluno = (aluno) => {
     setAlunoSelecionado(aluno)
     setSearchTerm('')
   }
 
-  const handleNovoRegistro = () => {
+  const handleNovoRegistro = async () => {
     setEditingRegistro(null)
+    const dataAtual = await window.api.utils.getCurrentDateBrazil()
     setFormData({
-      data: new Date().toISOString().split('T')[0],
+      data: dataAtual,
       peso: '',
       treinoAtual: '',
       fotoBalanca: null
@@ -157,7 +120,7 @@ function Historico() {
     setIsModalOpen(true)
   }
 
-  const handleSalvarRegistro = () => {
+  const handleSalvarRegistro = async () => {
     if (!formData.data || !formData.peso || !formData.treinoAtual) {
       alert('Preencha todos os campos obrigatórios')
       return
@@ -168,32 +131,45 @@ function Historico() {
       return
     }
 
-    if (editingRegistro) {
-      // Editando registro existente
-      setHistoricos((prev) =>
-        prev.map((h) =>
-          h.id === editingRegistro.id
-            ? {
-                ...editingRegistro,
-                ...formData,
-                peso: parseFloat(formData.peso),
-                alunoId: alunoSelecionado.id
-              }
-            : h
-        )
-      )
-    } else {
-      // Novo registro
-      const novoRegistro = {
-        id: Math.max(...historicos.map((h) => h.id), 0) + 1,
-        alunoId: alunoSelecionado.id,
-        ...formData,
-        peso: parseFloat(formData.peso)
+    try {
+      const historicoData = {
+        aluno_id: alunoSelecionado.id,
+        data: formData.data,
+        peso: parseFloat(formData.peso),
+        treinoAtual: formData.treinoAtual,
+        fotoBalanca: formData.fotoBalanca
       }
-      setHistoricos((prev) => [...prev, novoRegistro])
-    }
 
-    handleCancelar()
+      if (editingRegistro) {
+        // Editando registro existente
+        await window.api.historicos.update(editingRegistro.id, historicoData)
+        alert('Registro atualizado com sucesso!')
+      } else {
+        // Novo registro
+        await window.api.historicos.create(historicoData)
+        alert('Registro criado com sucesso!')
+      }
+
+      // Recarregar dados
+      await loadData()
+      handleCancelar()
+    } catch (error) {
+      console.error('Erro ao salvar registro:', error)
+      alert('Erro ao salvar registro. Tente novamente.')
+    }
+  }
+
+  const handleDeletarRegistro = async (registro) => {
+    if (window.confirm('Tem certeza que deseja excluir este registro?')) {
+      try {
+        await window.api.historicos.delete(registro.id)
+        alert('Registro excluído com sucesso!')
+        await loadData()
+      } catch (error) {
+        console.error('Erro ao excluir registro:', error)
+        alert('Erro ao excluir registro. Tente novamente.')
+      }
+    }
   }
 
   const handleCancelar = () => {
@@ -211,6 +187,29 @@ function Historico() {
     if (!pesoAnterior) return null
     const variacao = pesoAtual - pesoAnterior
     return variacao
+  }
+
+  // Nova função para abrir imagem em modal
+  const handleOpenImage = (imageSrc) => {
+    setSelectedImage(imageSrc)
+    setIsImageModalOpen(true)
+  }
+
+  // Nova função para fechar modal de imagem
+  const handleCloseImageModal = () => {
+    setSelectedImage(null)
+    setIsImageModalOpen(false)
+  }
+
+  if (loading) {
+    return (
+      <div className="h-screen w-full p-6 text-gray-200 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-lime-500 mx-auto mb-4"></div>
+          <p className="text-lg">Carregando históricos...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -305,7 +304,7 @@ function Historico() {
                             <div className="flex justify-between items-start mb-3">
                               <div>
                                 <h3 className="text-lg font-semibold text-white">
-                                  {new Date(registro.data).toLocaleDateString('pt-BR')}
+                                  {new Date(registro.data + 'T00:00:00').toLocaleDateString('pt-BR')}
                                 </h3>
                                 <div className="flex items-center gap-4 mt-2">
                                   <span className="text-2xl font-bold text-lime-400">
@@ -327,12 +326,20 @@ function Historico() {
                                   )}
                                 </div>
                               </div>
-                              <button
-                                onClick={() => handleEditarRegistro(registro)}
-                                className="text-blue-400 hover:text-blue-300 text-sm"
-                              >
-                                Editar
-                              </button>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => handleEditarRegistro(registro)}
+                                  className="text-blue-400 hover:text-blue-300 text-sm"
+                                >
+                                  Editar
+                                </button>
+                                <button
+                                  onClick={() => handleDeletarRegistro(registro)}
+                                  className="text-red-400 hover:text-red-300 text-sm"
+                                >
+                                  Excluir
+                                </button>
+                              </div>
                             </div>
 
                             <div className="mb-3">
@@ -349,8 +356,9 @@ function Historico() {
                                 <img
                                   src={registro.fotoBalanca}
                                   alt="Foto da balança"
-                                  className="max-w-xs max-h-40 rounded-md border border-stone-500 cursor-pointer hover:opacity-80"
-                                  onClick={() => window.open(registro.fotoBalanca, '_blank')}
+                                  className="max-w-xs max-h-40 rounded-md border border-stone-500 cursor-pointer hover:opacity-80 transition-opacity"
+                                  onClick={() => handleOpenImage(registro.fotoBalanca)}
+                                  title="Clique para ampliar"
                                 />
                               </div>
                             )}
@@ -441,6 +449,7 @@ function Historico() {
           <div>
             <label className="block text-sm font-medium text-stone-700 mb-1">Foto da Balança</label>
             <input
+              id="fotoBalanca"
               type="file"
               accept="image/*"
               onChange={handleFileChange}
@@ -449,12 +458,33 @@ function Historico() {
 
             {formData.fotoBalanca && (
               <div className="mt-3">
-                <p className="text-sm text-stone-600 mb-2">Preview:</p>
-                <img
-                  src={formData.fotoBalanca}
-                  alt="Preview da foto"
-                  className="max-w-full max-h-40 rounded-md border border-stone-300"
-                />
+                <div className="flex justify-between items-center mb-2">
+                  <p className="text-sm text-stone-600">Preview:</p>
+                  <button
+                    type="button"
+                    onClick={handleRemovePhoto}
+                    className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded-md transition-colors"
+                  >
+                    Remover Foto
+                  </button>
+                </div>
+                <div className="relative">
+                  <img
+                    src={formData.fotoBalanca}
+                    alt="Preview da foto"
+                    className="max-w-full max-h-40 rounded-md border border-stone-300 cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={() => handleOpenImage(formData.fotoBalanca)}
+                    title="Clique para ampliar"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleRemovePhoto}
+                    className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm transition-colors"
+                    title="Remover foto"
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -462,6 +492,30 @@ function Historico() {
           <div className="text-sm text-stone-500">* Campos obrigatórios</div>
         </form>
       </Modal>
+
+      {/* Modal para visualizar imagem ampliada */}
+      {isImageModalOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
+          onClick={handleCloseImageModal}
+        >
+          <div className="relative max-w-4xl max-h-full">
+            <button
+              onClick={handleCloseImageModal}
+              className="absolute top-4 right-4 text-white bg-black bg-opacity-50 rounded-full w-10 h-10 flex items-center justify-center hover:bg-opacity-75 transition-all z-10"
+              title="Fechar"
+            >
+              ✕
+            </button>
+            <img
+              src={selectedImage}
+              alt="Foto da balança ampliada"
+              className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

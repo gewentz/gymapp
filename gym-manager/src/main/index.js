@@ -337,6 +337,53 @@ app.whenReady().then(async () => {
     }
   })
 
+  // ========== HANDLERS DOS HISTÓRICOS ==========
+
+  ipcMain.handle('historicos:getAll', async () => {
+    try {
+      return await database.getAllHistoricos()
+    } catch (error) {
+      console.error('Erro ao buscar históricos:', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('historicos:getByAluno', async (event, alunoId) => {
+    try {
+      return await database.getHistoricosByAluno(alunoId)
+    } catch (error) {
+      console.error('Erro ao buscar históricos do aluno:', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('historicos:create', async (event, historicoData) => {
+    try {
+      return await database.createHistorico(historicoData)
+    } catch (error) {
+      console.error('Erro ao criar histórico:', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('historicos:update', async (event, id, historicoData) => {
+    try {
+      return await database.updateHistorico(id, historicoData)
+    } catch (error) {
+      console.error('Erro ao atualizar histórico:', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('historicos:delete', async (event, id) => {
+    try {
+      return await database.deleteHistorico(id)
+    } catch (error) {
+      console.error('Erro ao deletar histórico:', error)
+      throw error
+    }
+  })
+
   // ========== HANDLERS PARA ZERAR DADOS ==========
 
   ipcMain.handle('transacoes:deleteAll', async () => {
