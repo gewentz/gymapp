@@ -21,7 +21,8 @@ function Alunos() {
     horariosTreino: [],
     status: 'Ativo',
     corPadrao: '#5fffd2',
-    mensalidade: ''
+    mensalidade: '',
+    dataMatricula: '' // <-- adicionar aqui
   })
 
   // Carregar alunos do banco de dados
@@ -151,7 +152,8 @@ function Alunos() {
       horariosTreino: [],
       status: 'Ativo',
       corPadrao: '#4CAF50',
-      mensalidade: ''
+      mensalidade: '',
+      dataMatricula: '' // <-- adicionar aqui
     })
     setIsModalOpen(true)
 
@@ -175,7 +177,8 @@ function Alunos() {
       horariosTreino: [...(aluno.horariosTreino || [])],
       status: aluno.status,
       corPadrao: aluno.corPadrao || '#4CAF50',
-      mensalidade: aluno.mensalidade || ''
+      mensalidade: aluno.mensalidade || '',
+      dataMatricula: aluno.dataMatricula || '' // <-- adicionar aqui
     })
     setIsModalOpen(true)
 
@@ -206,12 +209,15 @@ function Alunos() {
       return
     }
 
+    const dataMatriculaFinal = formData.dataMatricula ? formData.dataMatricula : getCurrentDate()
+
     try {
       if (editingAluno) {
         // Atualizar aluno existente
         const alunoAtualizado = {
           ...formData,
-          mensalidade: mensalidadeNum
+          mensalidade: mensalidadeNum,
+          dataMatricula: dataMatriculaFinal // <-- garantir que vai o valor correto
         }
 
         await window.api.alunos.update(editingAluno.id, alunoAtualizado)
@@ -221,7 +227,7 @@ function Alunos() {
         const novoAluno = {
           ...formData,
           mensalidade: mensalidadeNum,
-          dataMatricula: getCurrentDate()
+          dataMatricula: dataMatriculaFinal // <-- garantir que vai o valor correto
         }
 
         await window.api.alunos.create(novoAluno)
@@ -481,7 +487,10 @@ function Alunos() {
                   formData.horariosTreino.find((h) => h.dia === dia.key)?.horario || '08:00'
 
                 return (
-                  <div key={dia.key} className="border border-stone-300 rounded-lg p-3 relative z-10">
+                  <div
+                    key={dia.key}
+                    className="border border-stone-300 rounded-lg p-3 relative z-10"
+                  >
                     <div className="flex items-center mb-2">
                       <input
                         type="checkbox"
@@ -577,6 +586,24 @@ function Alunos() {
               min="0"
               required
               autoComplete="off"
+            />
+          </div>
+
+          {/* Data de Matrícula */}
+          <div>
+            <label
+              htmlFor="dataMatricula"
+              className="block text-sm font-medium text-stone-700 mb-1"
+            >
+              Data de Matrícula
+            </label>
+            <input
+              type="date"
+              id="dataMatricula"
+              name="dataMatricula"
+              value={formData.dataMatricula}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-stone-300 rounded-md text-stone-700 focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500 relative z-10"
             />
           </div>
 

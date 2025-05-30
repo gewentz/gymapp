@@ -10,6 +10,9 @@ import {
   getCurrentDate,
   getCurrentDateBrazil
 } from './utils/dbUtils.js'
+import fs from 'fs'
+import path from 'path'
+import os from 'os'
 
 // Configurar auto-updater
 autoUpdater.autoDownload = false // Não baixar automaticamente
@@ -458,6 +461,20 @@ app.whenReady().then(async () => {
       return getCurrentDate()
     } catch (error) {
       console.error('Erro ao obter data atual:', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('utils:backupDatabase', async () => {
+    try {
+      const dbPath = path.join(app.getPath('userData'), 'gymapp.db')
+      const downloadsDir = path.join(os.homedir(), 'Downloads')
+      const backupFileName = `gymapp-backup-${new Date().toISOString().replace(/[:.]/g, '-')}.db`
+      const backupPath = path.join(downloadsDir, backupFileName)
+      fs.copyFileSync(dbPath, backupPath)
+      return true
+    } catch (error) {
+      console.error('Erro ao fazer backup do banco de dados:', error)
       throw error
     }
   })

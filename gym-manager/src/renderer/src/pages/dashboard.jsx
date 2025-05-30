@@ -156,6 +156,16 @@ function Dashboard() {
     0
   )
 
+  const handleBackup = async () => {
+    try {
+      await window.api.utils.backupDatabase()
+      alert('Backup realizado com sucesso na pasta Downloads!')
+    } catch (error) {
+      console.error('Erro ao fazer backup:', error)
+      alert('Erro ao fazer backup do banco de dados.')
+    }
+  }
+
   if (loading) {
     return (
       <div className="h-screen w-full p-6 text-gray-200 flex items-center justify-center">
@@ -185,6 +195,12 @@ function Dashboard() {
             className="mt-2 px-4 py-2 bg-lime-600 text-white rounded-md hover:bg-lime-700 transition-colors text-sm"
           >
             Atualizar Dados
+          </button>
+          <button
+            onClick={handleBackup}
+            className="mt-2 ml-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm"
+          >
+            Fazer Backup
           </button>
         </div>
       </div>
