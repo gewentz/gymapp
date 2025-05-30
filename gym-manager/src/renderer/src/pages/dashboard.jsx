@@ -28,7 +28,9 @@ function Dashboard() {
       setLoading(true)
 
       const hoje = new Date()
-      const diaSemanaAtual = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'][hoje.getDay()]
+      const diaSemanaAtual = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'][
+        hoje.getDay()
+      ]
 
       // Carregar dados em paralelo
       const [dashboardData, treinosHoje, estatisticas] = await Promise.all([
@@ -166,6 +168,20 @@ function Dashboard() {
     }
   }
 
+  const handleImport = async () => {
+    try {
+      const result = await window.api.utils.importDatabase()
+      if (result === true) {
+        alert('Banco de dados importado com sucesso! Reinicie a aplicação para ver as alterações.')
+      } else if (result === false) {
+        alert('Importação cancelada.')
+      }
+    } catch (error) {
+      console.error('Erro ao importar banco:', error)
+      alert('Erro ao importar banco de dados.')
+    }
+  }
+
   if (loading) {
     return (
       <div className="h-screen w-full p-6 text-gray-200 flex items-center justify-center">
@@ -201,6 +217,12 @@ function Dashboard() {
             className="mt-2 ml-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm"
           >
             Fazer Backup
+          </button>
+          <button
+            onClick={handleImport}
+            className="mt-2 ml-2 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors text-sm"
+          >
+            Importar Banco
           </button>
         </div>
       </div>
@@ -426,9 +448,7 @@ function Dashboard() {
                 >
                   <p className="text-sm font-medium">{dia.label}</p>
                   <p className="text-2xl font-bold mt-1">{quantidade}</p>
-                  <p className="text-xs opacity-75">
-                    {quantidade === 1 ? 'aluno' : 'alunos'}
-                  </p>
+                  <p className="text-xs opacity-75">{quantidade === 1 ? 'aluno' : 'alunos'}</p>
                 </div>
               )
             })}

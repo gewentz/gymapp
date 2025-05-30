@@ -479,6 +479,27 @@ app.whenReady().then(async () => {
     }
   })
 
+  ipcMain.handle('utils:importDatabase', async () => {
+    try {
+      const { canceled, filePaths } = await dialog.showOpenDialog({
+        title: 'Importar Banco de Dados',
+        buttonLabel: 'Importar',
+        filters: [{ name: 'Banco de Dados SQLite', extensions: ['db'] }],
+        properties: ['openFile']
+      })
+      if (canceled || !filePaths || !filePaths[0]) {
+        return false
+      }
+      const selectedFile = filePaths[0]
+      const dbPath = path.join(app.getPath('userData'), 'gymapp.db')
+      fs.copyFileSync(selectedFile, dbPath)
+      return true
+    } catch (error) {
+      console.error('Erro ao importar banco de dados:', error)
+      throw error
+    }
+  })
+
   // ========== HANDLERS DO AUTO-UPDATER ==========
 
   ipcMain.handle('updater:check-for-updates', async () => {

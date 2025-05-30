@@ -43,7 +43,8 @@ const api = {
     calculateAge: (birthDate) => ipcRenderer.invoke('utils:calculateAge', birthDate),
     getCurrentDate: () => ipcRenderer.invoke('utils:getCurrentDate'),
     getCurrentDateBrazil: () => ipcRenderer.invoke('utils:getCurrentDateBrazil'),
-    backupDatabase: () => ipcRenderer.invoke('utils:backupDatabase')
+    backupDatabase: () => ipcRenderer.invoke('utils:backupDatabase'),
+    importDatabase: () => ipcRenderer.invoke('utils:importDatabase')
   },
   updater: {
     checkForUpdates: () => ipcRenderer.invoke('updater:check-for-updates'),
