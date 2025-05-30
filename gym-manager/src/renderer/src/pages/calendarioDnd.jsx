@@ -1,76 +1,31 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 
 function CalendarioDnd() {
-  // Dados mockados dos alunos com horários
-  const [agendamentos, setAgendamentos] = useState([
-    {
-      id: 1,
-      alunoId: 1,
-      nomeAluno: 'João Silva',
-      dia: 'segunda',
-      horario: '08:00',
-      duracao: 60 // em minutos
-    },
-    {
-      id: 2,
-      alunoId: 2,
-      nomeAluno: 'Maria Santos',
-      dia: 'segunda',
-      horario: '08:00', // Mesmo horário que João
-      duracao: 60
-    },
-    {
-      id: 3,
-      alunoId: 1,
-      nomeAluno: 'João Silva',
-      dia: 'quarta',
-      horario: '08:00',
-      duracao: 60
-    },
-    {
-      id: 4,
-      alunoId: 3,
-      nomeAluno: 'Pedro Oliveira',
-      dia: 'terca',
-      horario: '10:00',
-      duracao: 60
-    },
-    {
-      id: 5,
-      alunoId: 4,
-      nomeAluno: 'Ana Costa',
-      dia: 'quinta',
-      horario: '14:00',
-      duracao: 60
-    },
-    {
-      id: 6,
-      alunoId: 5,
-      nomeAluno: 'Carlos Ferreira',
-      dia: 'sexta',
-      horario: '16:00',
-      duracao: 60
-    },
-    {
-      id: 7,
-      alunoId: 2,
-      nomeAluno: 'Maria Santos',
-      dia: 'quinta',
-      horario: '14:00', // Mesmo horário que Ana
-      duracao: 60
-    },
-    {
-      id: 8,
-      alunoId: 6,
-      nomeAluno: 'Lucia Mendes',
-      dia: 'segunda',
-      horario: '08:00', // Terceiro aluno no mesmo horário
-      duracao: 60
-    }
-  ])
-
+  const [alunos, setAlunos] = useState([])
+  const [loading, setLoading] = useState(true)
   const [draggedItem, setDraggedItem] = useState(null)
   const [dragOverCell, setDragOverCell] = useState(null)
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [selectedCell, setSelectedCell] = useState(null)
+
+  // Carregar alunos do banco de dados
+  const loadAlunos = async () => {
+    try {
+      setLoading(true)
+      const alunosData = await window.api.alunos.getAll()
+      setAlunos(alunosData)
+    } catch (error) {
+      console.error('Erro ao carregar alunos:', error)
+      alert('Erro ao carregar dados dos alunos')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Carregar alunos ao montar o componente
+  useEffect(() => {
+    loadAlunos()
+  }, [])
 
   // Configurações do calendário
   const diasSemana = [
@@ -92,9 +47,32 @@ function CalendarioDnd() {
     }
   }
 
-  // Função para obter agendamentos de um dia e horário específico
+  // Função para obter agendamentos de um dia e horário específico baseado nos dados dos alunos
   const getAgendamentosPorSlot = (dia, horario) => {
-    return agendamentos.filter((ag) => ag.dia === dia && ag.horario === horario)
+    const agendamentos = []
+
+    alunos.forEach(aluno => {
+      if (aluno.status === 'Ativo' && aluno.diasTreino && aluno.horariosTreino) {
+        // Verificar se o aluno treina neste dia
+        if (aluno.diasTreino.includes(dia)) {
+          // Encontrar o horário para este dia
+          const horarioTreino = aluno.horariosTreino.find(h => h.dia === dia)
+          if (horarioTreino && horarioTreino.horario === horario) {
+            agendamentos.push({
+              id: `${aluno.id}-${dia}-${horario}`,
+              alunoId: aluno.id,
+              nomeAluno: aluno.nome,
+              dia: dia,
+              horario: horario,
+              duracao: 60,
+              corPadrao: aluno.corPadrao || '#4CAF50'
+            })
+          }
+        }
+      }
+    })
+
+    return agendamentos
   }
 
   // Handlers do Drag and Drop
@@ -113,33 +91,92 @@ function CalendarioDnd() {
     setDragOverCell(null)
   }
 
-  const handleDrop = (e, novoDia, novoHorario) => {
+  const handleDrop = async (e, novoDia, novoHorario) => {
     e.preventDefault()
     setDragOverCell(null)
 
     if (!draggedItem) return
 
-    // Verificar se o aluno já tem agendamento neste horário/dia (evitar duplicatas do mesmo aluno)
-    const agendamentoExistente = agendamentos.find(
-      (ag) =>
-        ag.dia === novoDia &&
-        ag.horario === novoHorario &&
-        ag.alunoId === draggedItem.alunoId &&
-        ag.id !== draggedItem.id
-    )
+    try {
+      // Encontrar o aluno
+      const aluno = alunos.find(a => a.id === draggedItem.alunoId)
+      if (!aluno) return
 
-    if (agendamentoExistente) {
-      alert('Este aluno já possui agendamento neste horário!')
-      setDraggedItem(null)
-      return
-    }
-
-    // Atualizar o agendamento (permite múltiplos alunos no mesmo horário)
-    setAgendamentos((prev) =>
-      prev.map((ag) =>
-        ag.id === draggedItem.id ? { ...ag, dia: novoDia, horario: novoHorario } : ag
+      // Verificar se o aluno já tem agendamento neste horário/dia
+      const jaTemAgendamento = aluno.horariosTreino.some(h =>
+        h.dia === novoDia && h.horario === novoHorario
       )
-    )
+
+      if (jaTemAgendamento) {
+        alert('Este aluno já possui agendamento neste horário!')
+        setDraggedItem(null)
+        return
+      }
+
+      // Criar cópias dos arrays para manipulação
+      let novosDiasTreino = [...aluno.diasTreino]
+      let novosHorariosTreino = [...aluno.horariosTreino]
+
+      // Encontrar o índice do horário que está sendo movido
+      const indiceHorarioAntigo = novosHorariosTreino.findIndex(h =>
+        h.dia === draggedItem.dia && h.horario === draggedItem.horario
+      )
+
+      if (indiceHorarioAntigo !== -1) {
+        // Remover o horário antigo
+        novosHorariosTreino.splice(indiceHorarioAntigo, 1)
+
+        // Verificar se ainda há outros horários para o dia antigo
+        const temOutrosHorariosNoDiaAntigo = novosHorariosTreino.some(h => h.dia === draggedItem.dia)
+
+        // Se não há mais horários no dia antigo, remover o dia da lista
+        if (!temOutrosHorariosNoDiaAntigo) {
+          novosDiasTreino = novosDiasTreino.filter(dia => dia !== draggedItem.dia)
+        }
+
+        // Adicionar o novo horário
+        novosHorariosTreino.push({
+          dia: novoDia,
+          horario: novoHorario
+        })
+
+        // Adicionar o novo dia se não existir
+        if (!novosDiasTreino.includes(novoDia)) {
+          novosDiasTreino.push(novoDia)
+        }
+
+        // Dados atualizados do aluno
+        const alunoAtualizado = {
+          ...aluno,
+          diasTreino: novosDiasTreino,
+          horariosTreino: novosHorariosTreino
+        }
+
+        // Atualizar no banco de dados
+        await window.api.alunos.update(aluno.id, alunoAtualizado)
+
+        // Atualizar o estado local imediatamente
+        setAlunos(prevAlunos =>
+          prevAlunos.map(a =>
+            a.id === aluno.id ? alunoAtualizado : a
+          )
+        )
+
+        // Forçar recarregamento dos dados do banco para garantir sincronização
+        setTimeout(async () => {
+          await loadAlunos()
+        }, 100)
+
+        console.log(`Horário movido: ${draggedItem.dia} ${draggedItem.horario} -> ${novoDia} ${novoHorario}`)
+        console.log('Dias de treino atualizados:', novosDiasTreino)
+        console.log('Horários de treino atualizados:', novosHorariosTreino)
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar horário:', error)
+      alert('Erro ao atualizar horário. Tente novamente.')
+      // Em caso de erro, recarregar os dados originais
+      await loadAlunos()
+    }
 
     setDraggedItem(null)
   }
@@ -149,19 +186,9 @@ function CalendarioDnd() {
     setDragOverCell(null)
   }
 
-  // Função para obter cor do aluno (baseada no ID)
-  const getCorAluno = (alunoId) => {
-    const cores = [
-      'bg-blue-500',
-      'bg-green-500',
-      'bg-purple-500',
-      'bg-pink-500',
-      'bg-yellow-500',
-      'bg-red-500',
-      'bg-indigo-500',
-      'bg-orange-500'
-    ]
-    return cores[alunoId % cores.length]
+  // Função para obter cor do aluno
+  const getCorAluno = (agendamento) => {
+    return agendamento.corPadrao || '#4CAF50'
   }
 
   // Função para calcular altura da célula baseada no número de agendamentos
@@ -173,10 +200,104 @@ function CalendarioDnd() {
     return 'min-h-[120px]'
   }
 
+  // Nova função para abrir modal de adicionar horário
+  const handleAddHorario = (dia, horario) => {
+    setSelectedCell({ dia, horario })
+    setShowAddModal(true)
+  }
+
+  // Nova função para adicionar horário ao aluno
+  const handleConfirmAddHorario = async (alunoId) => {
+    if (!selectedCell || !alunoId) return
+
+    try {
+      const aluno = alunos.find(a => a.id === parseInt(alunoId))
+      if (!aluno) return
+
+      // Verificar se o aluno já tem agendamento neste horário/dia
+      const jaTemAgendamento = aluno.horariosTreino.some(h =>
+        h.dia === selectedCell.dia && h.horario === selectedCell.horario
+      )
+
+      if (jaTemAgendamento) {
+        alert('Este aluno já possui agendamento neste horário!')
+        return
+      }
+
+      // Criar cópias dos arrays para manipulação
+      let novosDiasTreino = [...aluno.diasTreino]
+      let novosHorariosTreino = [...aluno.horariosTreino]
+
+      // Adicionar o novo horário
+      novosHorariosTreino.push({
+        dia: selectedCell.dia,
+        horario: selectedCell.horario
+      })
+
+      // Adicionar o novo dia se não existir
+      if (!novosDiasTreino.includes(selectedCell.dia)) {
+        novosDiasTreino.push(selectedCell.dia)
+      }
+
+      // Dados atualizados do aluno
+      const alunoAtualizado = {
+        ...aluno,
+        diasTreino: novosDiasTreino,
+        horariosTreino: novosHorariosTreino
+      }
+
+      // Atualizar no banco de dados
+      await window.api.alunos.update(aluno.id, alunoAtualizado)
+
+      // Atualizar o estado local imediatamente
+      setAlunos(prevAlunos =>
+        prevAlunos.map(a =>
+          a.id === aluno.id ? alunoAtualizado : a
+        )
+      )
+
+      // Fechar modal
+      setShowAddModal(false)
+      setSelectedCell(null)
+
+      alert('Horário adicionado com sucesso!')
+
+      console.log(`Horário adicionado: ${aluno.nome} - ${selectedCell.dia} ${selectedCell.horario}`)
+    } catch (error) {
+      console.error('Erro ao adicionar horário:', error)
+      alert('Erro ao adicionar horário. Tente novamente.')
+    }
+  }
+
+  // Função para cancelar adição
+  const handleCancelAdd = () => {
+    setShowAddModal(false)
+    setSelectedCell(null)
+  }
+
+  if (loading) {
+    return (
+      <div className="h-screen w-full p-6 text-gray-200 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-lime-500 mx-auto mb-4"></div>
+          <p className="text-lg">Carregando calendário...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="h-screen w-full p-6 text-gray-200">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-4xl font-bold opacity-35">Calendário de Treinos</h1>
+        <div className="flex gap-2">
+          <button
+            onClick={loadAlunos}
+            className="px-4 py-2 bg-lime-600 text-white rounded-md hover:bg-lime-700 transition-colors"
+          >
+            Atualizar
+          </button>
+        </div>
       </div>
 
       <div
@@ -187,15 +308,18 @@ function CalendarioDnd() {
         <div className="mb-4 p-3 bg-stone-600 rounded-lg">
           <p className="text-sm text-gray-300 mb-2">
             <strong>Instruções:</strong> Arraste e solte os agendamentos para reorganizar os
-            horários. Múltiplos alunos podem treinar no mesmo horário.
+            horários. Clique no botão "+" para adicionar novos horários. Os dados são salvos automaticamente no banco de dados.
           </p>
           <div className="flex flex-wrap gap-2 text-xs">
-            <span className="px-2 py-1 bg-blue-500 rounded">João Silva</span>
-            <span className="px-2 py-1 bg-green-500 rounded">Maria Santos</span>
-            <span className="px-2 py-1 bg-purple-500 rounded">Pedro Oliveira</span>
-            <span className="px-2 py-1 bg-pink-500 rounded">Ana Costa</span>
-            <span className="px-2 py-1 bg-yellow-500 rounded text-black">Carlos Ferreira</span>
-            <span className="px-2 py-1 bg-red-500 rounded">Lucia Mendes</span>
+            {alunos.filter(a => a.status === 'Ativo').slice(0, 6).map(aluno => (
+              <span
+                key={aluno.id}
+                className="px-2 py-1 rounded text-white"
+                style={{ backgroundColor: aluno.corPadrao || '#4CAF50' }}
+              >
+                {aluno.nome}
+              </span>
+            ))}
           </div>
         </div>
 
@@ -234,13 +358,22 @@ function CalendarioDnd() {
                   return (
                     <div
                       key={cellKey}
-                      className={`${getAlturaCell(agendamentosSlot.length)} p-1 border border-stone-500 transition-colors ${
+                      className={`${getAlturaCell(agendamentosSlot.length)} p-1 border border-stone-500 transition-colors relative group ${
                         isDragOver ? 'bg-lime-600 bg-opacity-30' : 'bg-stone-800'
                       }`}
                       onDragOver={(e) => handleDragOver(e, dia.key, horario)}
                       onDragLeave={handleDragLeave}
                       onDrop={(e) => handleDrop(e, dia.key, horario)}
                     >
+                      {/* Botão para adicionar horário */}
+                      <button
+                        onClick={() => handleAddHorario(dia.key, horario)}
+                        className="absolute top-1 right-1 w-5 h-5 bg-lime-600 text-white rounded-full text-xs opacity-0 group-hover:opacity-100 transition-opacity hover:bg-lime-700 flex items-center justify-center"
+                        title="Adicionar aluno neste horário"
+                      >
+                        +
+                      </button>
+
                       {/* Indicador de quantidade quando há muitos agendamentos */}
                       {agendamentosSlot.length > 0 && (
                         <div className="text-xs text-gray-400 mb-1 text-center">
@@ -256,16 +389,15 @@ function CalendarioDnd() {
                             onDragStart={(e) => handleDragStart(e, agendamento)}
                             onDragEnd={handleDragEnd}
                             className={`
-                              ${getCorAluno(agendamento.alunoId)}
                               text-white text-xs p-1 rounded cursor-move
                               hover:opacity-80 transition-opacity
                               ${draggedItem?.id === agendamento.id ? 'opacity-50' : ''}
                             `}
+                            style={{ backgroundColor: getCorAluno(agendamento) }}
                             title={`${agendamento.nomeAluno} - ${agendamento.horario} (${agendamento.duracao}min)`}
                           >
                             <div className="font-semibold truncate text-center">
-                              {agendamento.nomeAluno.split(' ')[0]}{' '}
-                              {/* Só o primeiro nome para economizar espaço */}
+                              {agendamento.nomeAluno.split(' ')[0]}
                             </div>
                             <div className="text-xs opacity-90 text-center">
                               {agendamento.duracao}min
@@ -284,7 +416,21 @@ function CalendarioDnd() {
         {/* Resumo do Dia */}
         <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4">
           {diasSemana.map((dia) => {
-            const agendamentosDia = agendamentos.filter((ag) => ag.dia === dia.key)
+            const agendamentosDia = []
+            alunos.forEach(aluno => {
+              if (aluno.status === 'Ativo' && aluno.diasTreino && aluno.horariosTreino) {
+                if (aluno.diasTreino.includes(dia.key)) {
+                  const horarioTreino = aluno.horariosTreino.find(h => h.dia === dia.key)
+                  if (horarioTreino) {
+                    agendamentosDia.push({
+                      nome: aluno.nome,
+                      horario: horarioTreino.horario
+                    })
+                  }
+                }
+              }
+            })
+
             const horariosOcupados = [...new Set(agendamentosDia.map((ag) => ag.horario))].length
 
             return (
@@ -298,9 +444,9 @@ function CalendarioDnd() {
                   {agendamentosDia
                     .sort((a, b) => a.horario.localeCompare(b.horario))
                     .slice(0, 4)
-                    .map((ag) => (
-                      <div key={ag.id} className="text-xs text-gray-300">
-                        {ag.horario} - {ag.nomeAluno.split(' ')[0]}
+                    .map((ag, index) => (
+                      <div key={index} className="text-xs text-gray-300">
+                        {ag.horario} - {ag.nome.split(' ')[0]}
                       </div>
                     ))}
                   {agendamentosDia.length > 4 && (
@@ -314,6 +460,67 @@ function CalendarioDnd() {
           })}
         </div>
       </div>
+
+      {/* Modal para adicionar horário */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-96 max-w-90vw">
+            <h3 className="text-lg font-bold text-gray-800 mb-4">
+              Adicionar Aluno ao Horário
+            </h3>
+
+            {selectedCell && (
+              <p className="text-gray-600 mb-4">
+                Dia: <strong>{diasSemana.find(d => d.key === selectedCell.dia)?.label}</strong><br/>
+                Horário: <strong>{selectedCell.horario}</strong>
+              </p>
+            )}
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Selecione o aluno:
+              </label>
+              <select
+                id="alunoSelect"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-500 text-gray-700"
+                defaultValue=""
+              >
+                <option value="">Selecione um aluno...</option>
+                {alunos
+                  .filter(aluno => aluno.status === 'Ativo')
+                  .map(aluno => (
+                    <option key={aluno.id} value={aluno.id}>
+                      {aluno.nome}
+                    </option>
+                  ))
+                }
+              </select>
+            </div>
+
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={handleCancelAdd}
+                className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  const alunoId = document.getElementById('alunoSelect').value
+                  if (alunoId) {
+                    handleConfirmAddHorario(alunoId)
+                  } else {
+                    alert('Por favor, selecione um aluno.')
+                  }
+                }}
+                className="px-4 py-2 bg-lime-600 text-white rounded-md hover:bg-lime-700 transition-colors"
+              >
+                Adicionar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
