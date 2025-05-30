@@ -118,6 +118,52 @@ class Database {
     })
   }
 
+  // Adicionar após o initTables() se necessário
+  async migrateDatabase() {
+    return new Promise((resolve, reject) => {
+      // Verificar se a coluna mensalidade é REAL
+      this.db.run(`
+        CREATE TABLE IF NOT EXISTS alunos_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          nome TEXT NOT NULL,
+          nascimento TEXT,
+          telefone TEXT NOT NULL,
+          email TEXT NOT NULL UNIQUE,
+          diasTreino TEXT,
+          horariosTreino TEXT,
+          status TEXT DEFAULT 'Ativo',
+          dataMatricula TEXT,
+          corPadrao TEXT DEFAULT '#4CAF50',
+          mensalidade REAL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `, (err) => {
+        if (err) {
+          reject(err)
+          return
+        }
+
+        // Copiar dados
+        this.db.run(`
+          INSERT INTO alunos_new SELECT * FROM alunos
+        `, (err) => {
+          if (err) {
+            reject(err)
+            return
+          }
+
+          // Renomear tabelas
+          this.db.serialize(() => {
+            this.db.run('DROP TABLE alunos')
+            this.db.run('ALTER TABLE alunos_new RENAME TO alunos')
+            resolve()
+          })
+        })
+      })
+    })
+  }
+
   // Buscar todos os alunos
   getAllAlunos() {
     return new Promise((resolve, reject) => {
@@ -125,12 +171,12 @@ class Database {
         if (err) {
           reject(err)
         } else {
-          // Converter strings JSON de volta para arrays e centavos para reais
+          // Converter strings JSON de volta para arrays (remover divisão por 100)
           const alunos = rows.map(aluno => ({
             ...aluno,
             diasTreino: aluno.diasTreino ? JSON.parse(aluno.diasTreino) : [],
             horariosTreino: aluno.horariosTreino ? JSON.parse(aluno.horariosTreino) : [],
-            mensalidade: aluno.mensalidade ? aluno.mensalidade / 100 : 0
+            mensalidade: aluno.mensalidade || 0 // Manter valor original
           }))
           resolve(alunos)
         }
@@ -149,7 +195,7 @@ class Database {
             ...row,
             diasTreino: row.diasTreino ? JSON.parse(row.diasTreino) : [],
             horariosTreino: row.horariosTreino ? JSON.parse(row.horariosTreino) : [],
-            mensalidade: row.mensalidade ? row.mensalidade / 100 : 0
+            mensalidade: row.mensalidade || 0 // Manter valor original
           }
           resolve(aluno)
         } else {
@@ -194,7 +240,7 @@ class Database {
         status || 'Ativo',
         dataMatricula,
         corPadrao || '#4CAF50',
-        parseFloat(mensalidade) || 0
+        parseFloat(mensalidade) || 0 // Não multiplicar por 100
       ]
 
       this.db.run(sql, params, function(err) {
@@ -244,7 +290,7 @@ class Database {
         JSON.stringify(horariosTreino || []),
         status,
         corPadrao,
-        parseFloat(mensalidade) || 0,  // Garantir conversão correta
+        parseFloat(mensalidade) || 0, // Não multiplicar por 100
         id
       ]
 

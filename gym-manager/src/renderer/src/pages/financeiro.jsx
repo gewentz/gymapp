@@ -118,7 +118,7 @@ function Financeiro() {
     const { name, value } = e.target
     setFormTransacao((prev) => ({
       ...prev,
-      [name]: name === 'valor' ? value : value
+      [name]: value
     }))
   }
 
@@ -131,7 +131,7 @@ function Financeiro() {
     try {
       const transacaoData = {
         ...formTransacao,
-        valor: parseFloat(formTransacao.valor.toString().replace(',', '.')) || 0,
+        valor: parseFloat(formTransacao.valor) || 0, // Remover o replace de vírgula
         aluno_id: formTransacao.aluno_id || null
       }
 
@@ -167,7 +167,7 @@ function Financeiro() {
     const { name, value } = e.target
     setFormFatura((prev) => ({
       ...prev,
-      [name]: name === 'valor' ? value : value
+      [name]: value // Remover a conversão aqui, manter como string
     }))
   }
 
@@ -178,7 +178,7 @@ function Financeiro() {
     }
 
     try {
-      const valor = parseFloat(formFatura.valor.toString().replace(',', '.')) || 0
+      const valor = parseFloat(formFatura.valor) || 0
 
       if (editingFatura) {
         const faturaData = {
@@ -872,10 +872,7 @@ function Financeiro() {
                         ? new Intl.NumberFormat('pt-BR', {
                             style: 'currency',
                             currency: 'BRL'
-                          }).format(
-                            parseFloat(formFatura.valor.toString().replace(',', '.')) /
-                              formFatura.numeroParcelas
-                          )
+                          }).format(parseFloat(formFatura.valor) / formFatura.numeroParcelas)
                         : 'R$ 0,00'}
                     </p>
                     <p className="text-xs text-stone-500 mt-1">

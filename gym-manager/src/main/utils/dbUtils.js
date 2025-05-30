@@ -104,6 +104,8 @@ export const parseCurrency = (value) => {
   return 0
 }
 
+// Remover ou comentar essas funções que não estão sendo usadas:
+/*
 export const centavosParaReais = (centavos) => {
   return centavos / 100
 }
@@ -111,3 +113,4 @@ export const centavosParaReais = (centavos) => {
 export const reaisParaCentavos = (reais) => {
   return Math.round(reais * 100)
 }
+*/
