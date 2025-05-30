@@ -384,6 +384,35 @@ app.whenReady().then(async () => {
     }
   })
 
+  // ========== HANDLERS DO DASHBOARD ==========
+
+  ipcMain.handle('dashboard:getData', async () => {
+    try {
+      return await database.getDashboardData()
+    } catch (error) {
+      console.error('Erro ao buscar dados do dashboard:', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('dashboard:getTreinosDoDia', async (event, diaSemana) => {
+    try {
+      return await database.getTreinosDoDia(diaSemana)
+    } catch (error) {
+      console.error('Erro ao buscar treinos do dia:', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('dashboard:getEstatisticasSemana', async () => {
+    try {
+      return await database.getEstatisticasSemana()
+    } catch (error) {
+      console.error('Erro ao buscar estatísticas da semana:', error)
+      throw error
+    }
+  })
+
   // ========== HANDLERS PARA ZERAR DADOS ==========
 
   ipcMain.handle('transacoes:deleteAll', async () => {

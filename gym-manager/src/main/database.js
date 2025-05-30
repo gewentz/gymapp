@@ -770,6 +770,127 @@ class Database {
       })
     })
   }
+
+  // Métodos para Dashboard
+  getDashboardData() {
+    return new Promise(async (resolve, reject) => {
+      try {
+        // Buscar dados em paralelo
+        const [alunos, faturas, transacoes] = await Promise.all([
+          this.getAllAlunos(),
+          this.getAllFaturas(),
+          this.getAllTransacoes()
+        ])
+
+        // Filtrar apenas alunos ativos
+        const alunosAtivos = alunos.filter(aluno => aluno.status === 'Ativo')
+
+        // Data atual do Brasil
+        const hoje = new Date()
+        const dataAtualBrasil = hoje.toISOString().split('T')[0]
+
+        // Filtrar faturas pendentes (contas a vencer nos próximos 15 dias)
+        const contasVencer = faturas.filter(fatura => {
+          if (fatura.status !== 'pendente') return false
+
+          const dataVencimento = new Date(fatura.dataVencimento + 'T00:00:00')
+          const hojeData = new Date(dataAtualBrasil + 'T00:00:00')
+
+          const diferenca = Math.ceil((dataVencimento.getTime() - hojeData.getTime()) / (1000 * 3600 * 24))
+
+          return diferenca >= -1 && diferenca <= 15 // Incluir vencidas de ontem
+        })
+
+        // Filtrar mensalidades a receber (próximos 7 dias)
+        const mensalidadesReceber = faturas.filter(fatura => {
+          if (fatura.status !== 'pendente' || fatura.categoria !== 'Mensalidade') return false
+
+          const dataVencimento = new Date(fatura.dataVencimento + 'T00:00:00')
+          const hojeData = new Date(dataAtualBrasil + 'T00:00:00')
+
+          const diferenca = Math.ceil((dataVencimento.getTime() - hojeData.getTime()) / (1000 * 3600 * 24))
+
+          return diferenca >= -1 && diferenca <= 7 // Incluir vencidas de ontem
+        })
+
+        resolve({
+          alunos: alunosAtivos,
+          contasVencer,
+          mensalidadesReceber,
+          totalAlunos: alunosAtivos.length,
+          totalContasVencer: contasVencer.reduce((total, conta) => total + conta.valor, 0),
+          totalMensalidadesReceber: mensalidadesReceber.reduce((total, mensalidade) => total + mensalidade.valor, 0)
+        })
+      } catch (error) {
+        reject(error)
+      }
+    })
+  }
+
+  // Método para obter treinos do dia
+  getTreinosDoDia(diaSemana) {
+    return new Promise((resolve, reject) => {
+      const sql = `
+        SELECT * FROM alunos
+        WHERE status = 'Ativo'
+        AND diasTreino LIKE ?
+        ORDER BY nome
+      `
+
+      this.db.all(sql, [`%"${diaSemana}"%`], (err, rows) => {
+        if (err) {
+          reject(err)
+        } else {
+          // Processar os dados dos alunos
+          const alunosComTreino = rows.map(aluno => ({
+            ...aluno,
+            diasTreino: aluno.diasTreino ? JSON.parse(aluno.diasTreino) : [],
+            horariosTreino: aluno.horariosTreino ? JSON.parse(aluno.horariosTreino) : [],
+            horarioHoje: (() => {
+              const horarios = aluno.horariosTreino ? JSON.parse(aluno.horariosTreino) : []
+              const horarioHoje = horarios.find(h => h.dia === diaSemana)
+              return horarioHoje ? horarioHoje.horario : 'Não definido'
+            })()
+          })).filter(aluno => aluno.diasTreino.includes(diaSemana))
+
+          resolve(alunosComTreino)
+        }
+      })
+    })
+  }
+
+  // Método para calcular estatísticas da semana
+  getEstatisticasSemana() {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const alunos = await this.getAllAlunos()
+        const alunosAtivos = alunos.filter(aluno => aluno.status === 'Ativo')
+
+        const diasSemana = ['segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado', 'domingo']
+        const estatisticasPorDia = {}
+
+        let totalAulasSemana = 0
+
+        diasSemana.forEach(dia => {
+          const alunosNoDia = alunosAtivos.filter(aluno =>
+            aluno.diasTreino && aluno.diasTreino.includes(dia)
+          ).length
+
+          estatisticasPorDia[dia] = alunosNoDia
+          totalAulasSemana += alunosNoDia
+        })
+
+        resolve({
+          estatisticasPorDia,
+          totalAulasSemana,
+          totalAlunosAtivos: alunosAtivos.length,
+          mediaAulasPorAluno: alunosAtivos.length > 0 ? totalAulasSemana / alunosAtivos.length : 0
+        })
+      } catch (error) {
+        reject(error)
+      }
+    })
+  }
 }
 
 export default new Database()

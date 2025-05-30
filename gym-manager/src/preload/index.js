@@ -33,6 +33,11 @@ const api = {
     marcarPaga: (faturaId) => ipcRenderer.invoke('faturas:marcarPaga', faturaId),
     deleteAll: () => ipcRenderer.invoke('faturas:deleteAll')
   },
+  dashboard: {
+    getData: () => ipcRenderer.invoke('dashboard:getData'),
+    getTreinosDoDia: (diaSemana) => ipcRenderer.invoke('dashboard:getTreinosDoDia', diaSemana),
+    getEstatisticasSemana: () => ipcRenderer.invoke('dashboard:getEstatisticasSemana')
+  },
   utils: {
     formatDate: (date) => ipcRenderer.invoke('utils:formatDate', date),
     calculateAge: (birthDate) => ipcRenderer.invoke('utils:calculateAge', birthDate),

@@ -114,3 +114,61 @@ export const reaisParaCentavos = (reais) => {
   return Math.round(reais * 100)
 }
 */
+
+// Função para obter o dia da semana em português
+export const getDiaSemanaPortugues = (date = new Date()) => {
+  const diasSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado']
+  return diasSemana[date.getDay()]
+}
+
+// Função para calcular diferença em dias
+export const calcularDiferencaDias = (dataFutura, dataAtual = new Date()) => {
+  const futuro = new Date(dataFutura + 'T00:00:00')
+  const atual = new Date(dataAtual.getFullYear(), dataAtual.getMonth(), dataAtual.getDate())
+
+  const diferenca = futuro.getTime() - atual.getTime()
+  return Math.ceil(diferenca / (1000 * 3600 * 24))
+}
+
+// Função para verificar se uma data está dentro de um intervalo
+export const isDataNoIntervalo = (dataVerificar, diasAntes = 0, diasDepois = 7) => {
+  const hoje = new Date()
+  const dataInicio = new Date(hoje.getTime() - (diasAntes * 24 * 60 * 60 * 1000))
+  const dataFim = new Date(hoje.getTime() + (diasDepois * 24 * 60 * 60 * 1000))
+  const dataCheck = new Date(dataVerificar + 'T00:00:00')
+
+  return dataCheck >= dataInicio && dataCheck <= dataFim
+}
+
+// Função para agrupar dados por período
+export const agruparPorPeriodo = (dados, campoData, periodo = 'dia') => {
+  const grupos = {}
+
+  dados.forEach(item => {
+    const data = new Date(item[campoData] + 'T00:00:00')
+    let chave
+
+    switch (periodo) {
+      case 'dia':
+        chave = data.toISOString().split('T')[0]
+        break
+      case 'semana':
+        const inicioSemana = new Date(data)
+        inicioSemana.setDate(data.getDate() - data.getDay())
+        chave = inicioSemana.toISOString().split('T')[0]
+        break
+      case 'mes':
+        chave = `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, '0')}`
+        break
+      default:
+        chave = data.toISOString().split('T')[0]
+    }
+
+    if (!grupos[chave]) {
+      grupos[chave] = []
+    }
+    grupos[chave].push(item)
+  })
+
+  return grupos
+}
