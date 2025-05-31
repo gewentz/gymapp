@@ -1,4 +1,4 @@
-appId: com.electron.app
+appId: com.gewentz.gymmanager
 productName: Ricardo Alves - Personal Trainer
 directories:
   buildResources: build

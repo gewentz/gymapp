@@ -1,9 +1,10 @@
 {
-  "name": "gym-manager",
+  "name": "ra-gymmanager-by-gewentz",
   "version": "1.0.0",
-  "description": "An Electron application with React",
+  "description": "App de gestão de academia, desenvolvido por Gabriel Wentz @gewentz.",
+  "license": "MIT",
   "main": "./out/main/index.js",
-  "author": "example.com",
+  "author": "Gabriel Wentz <gabrielfwtz@gmail.com>",
   "homepage": "https://electron-vite.org",
   "scripts": {
     "format": "prettier --write .",
@@ -29,7 +30,6 @@
     "electron-updater": "^6.3.9",
     "framer-motion": "^12.12.2",
     "react-router-dom": "^7.6.0",
-    "sqlite3": "^5.1.7",
     "tailwindcss": "^4.1.7"
   },
   "devDependencies": {
