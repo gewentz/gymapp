@@ -6,7 +6,11 @@ function Sidebar({ isCollapsed, onToggle }) {
       className={`h-screen bg-stone-700 text-white transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'} flex flex-col`}
     >
       <div className="flex items-center justify-between p-4 border-b border-stone-700">
-        <h2 className="text-xl font-bold ">{isCollapsed ? 'RA' : 'Ricardo Alves Personal'}</h2>
+        <img
+          src={isCollapsed ? '../public/logoSmall.png' : '../public/icon.png'}
+          alt="Logo"
+          className={isCollapsed ? 'h-8 w-8 mx-auto' : 'h-48 w-auto'}
+        />
         <button
           onClick={onToggle}
           className="text-white hover:bg-stone-700 p-1 rounded-md transition-colors"

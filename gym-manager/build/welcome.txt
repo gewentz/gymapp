@@ -1,0 +1,7 @@
+Bem-vindo ao instalador do Ricardo Alves - Personal Trainer!
+
+Este assistente irá guiá-lo pelo processo de instalação do aplicativo em seu computador.
+
+Recomendamos fechar outros programas antes de continuar.
+
+Clique em "Avançar" para prosseguir com a instalação.

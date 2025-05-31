@@ -1,5 +1,5 @@
 appId: com.electron.app
-productName: gym-manager
+productName: Ricardo Alves - Personal Trainer
 directories:
   buildResources: build
 files:
@@ -11,23 +11,20 @@ files:
 asarUnpack:
   - resources/**
 win:
-  executableName: gym-manager
+  icon: build/icon.ico
+  executableName: RicardoAlvesPersonalTrainer
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
-  shortcutName: ${productName}
-  uninstallDisplayName: ${productName}
+  shortcutName: Ricardo Alves - Personal Trainer
+  uninstallDisplayName: Ricardo Alves - Personal Trainer
   createDesktopShortcut: always
-mac:
-  entitlementsInherit: build/entitlements.mac.plist
-  extendInfo:
-    - NSCameraUsageDescription: Application requests access to the device's camera.
-    - NSMicrophoneUsageDescription: Application requests access to the device's microphone.
-    - NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
-    - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
-  notarize: false
-dmg:
-  artifactName: ${name}-${version}.${ext}
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  runAfterFinish: false
+  installerHeader: build/installerBanner.bmp
+  license: build/license.txt
 linux:
+  icon: build/icon.png
   target:
     - AppImage
     - snap
@@ -38,7 +35,9 @@ appImage:
   artifactName: ${name}-${version}.${ext}
 npmRebuild: false
 publish:
-  provider: generic
-  url: https://example.com/auto-updates
+  provider: github
+  owner: gewentz
+  repo: gymapp
+  releaseType: release
 electronDownload:
   mirror: https://npmmirror.com/mirrors/electron/

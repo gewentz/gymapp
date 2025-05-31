@@ -1,0 +1,32 @@
+TERMO DE LICENÇA DE USO DE SOFTWARE
+Pelo presente instrumento, Gabriel Felipe Wentz, desenvolvedor do software denominado Ricardo Alves Personal Trainer, doravante denominado simplesmente “LICENCIANTE”, concede ao usuário final, doravante denominado “LICENCIADO”, uma licença limitada, não exclusiva e intransferível para utilização do referido software, nos termos e condições abaixo:
+
+1. OBJETO
+1.1. Este Termo regula os direitos de uso do software Ricardo Alves Personal Trainer, de propriedade intelectual exclusiva do LICENCIANTE.
+
+1.2. A presente licença é concedida apenas para fins de uso pessoal ou institucional autorizado, não comercial.
+
+2. RESTRIÇÕES DE USO
+2.1. É expressamente proibida a comercialização, revenda, aluguel, sublicenciamento, distribuição, doação ou qualquer forma de transferência onerosa ou gratuita do software, no todo ou em parte.
+
+2.2. É vedada a prática de engenharia reversa, descompilação, modificação, tradução ou qualquer outro tipo de alteração no software, salvo autorização prévia e expressa do LICENCIANTE.
+
+2.3. O LICENCIADO não adquire quaisquer direitos de propriedade intelectual ou industrial sobre o software, permanecendo todos os direitos reservados ao LICENCIANTE.
+
+3. LIMITAÇÃO DE RESPONSABILIDADE
+3.1. O software é fornecido "no estado em que se encontra" (“as is”), sem qualquer garantia, expressa ou implícita, incluindo, mas não se limitando a garantias de funcionamento, adequação a uma finalidade específica ou ausência de erros.
+
+3.2. O LICENCIANTE não se responsabiliza por danos diretos, indiretos, incidentais, consequenciais ou outros prejuízos resultantes do uso ou da impossibilidade de uso do software.
+
+4. VIGÊNCIA E RESCISÃO
+4.1. A presente licença entra em vigor na data de instalação ou uso do software pelo LICENCIADO e permanecerá vigente por prazo indeterminado, salvo rescisão por violação de quaisquer cláusulas deste Termo.
+
+5. DISPOSIÇÕES GERAIS
+5.1. Este Termo constitui o acordo integral entre as partes em relação ao uso do software e substitui quaisquer acordos anteriores.
+
+5.2. O presente Termo será regido e interpretado de acordo com as leis da República Federativa do Brasil, elegendo as partes o foro da comarca de Itapagipe/MG, com renúncia a qualquer outro, por mais privilegiado que seja.
+
+Gabriel Felipe Wentz
+Desenvolvedor e Licenciante
+(34) 9 9697-4791
+Data: 31/05/2025
