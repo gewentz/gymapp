@@ -7,7 +7,7 @@ function Sidebar({ isCollapsed, onToggle }) {
     >
       <div className="flex items-center justify-between p-4 border-b border-stone-700">
         <img
-          src={isCollapsed ? '../public/logoSmall.png' : '../public/icon.png'}
+          src={isCollapsed ? '/logoSmall.png' : '/icon.png'}
           alt="Logo"
           className={isCollapsed ? 'h-8 w-8 mx-auto' : 'h-48 w-auto'}
         />
