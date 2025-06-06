@@ -153,16 +153,9 @@ function Alunos() {
       status: 'Ativo',
       corPadrao: '#4CAF50',
       mensalidade: '',
-      dataMatricula: '' // <-- adicionar aqui
+      dataMatricula: ''
     })
     setIsModalOpen(true)
-
-    // Focar no input nome após o modal abrir
-    setTimeout(() => {
-      if (nomeInputRef.current) {
-        nomeInputRef.current.focus()
-      }
-    }, 300)
   }, [])
 
   // Função para abrir modal de edição
@@ -181,13 +174,6 @@ function Alunos() {
       dataMatricula: aluno.dataMatricula || '' // <-- adicionar aqui
     })
     setIsModalOpen(true)
-
-    // Focar no input nome após o modal abrir
-    setTimeout(() => {
-      if (nomeInputRef.current) {
-        nomeInputRef.current.focus()
-      }
-    }, 300)
   }, [])
 
   // Função para salvar aluno (novo ou editado)
@@ -210,6 +196,7 @@ function Alunos() {
     }
 
     const dataMatriculaFinal = formData.dataMatricula ? formData.dataMatricula : getCurrentDate()
+    console.log('Data de matrícula enviada:', dataMatriculaFinal)
 
     try {
       if (editingAluno) {
@@ -278,15 +265,7 @@ function Alunos() {
     setIsModalOpen(false)
   }, [])
 
-  // Função para garantir que um input seja editável
-  const ensureInputEditable = useCallback((e) => {
-    const target = e.target
-    target.removeAttribute('readonly')
-    target.removeAttribute('disabled')
-    target.style.pointerEvents = 'auto'
-    target.style.userSelect = 'auto'
-    target.style.webkitUserSelect = 'auto'
-  }, [])
+
 
   if (loading) {
     return (
@@ -391,9 +370,6 @@ function Alunos() {
                 name="nome"
                 value={formData.nome}
                 onChange={handleInputChange}
-                onFocus={ensureInputEditable}
-                onMouseDown={ensureInputEditable}
-                onClick={ensureInputEditable}
                 className="w-full px-3 py-2 border border-stone-300 text-stone-700 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500"
                 placeholder="Digite o nome completo"
                 required

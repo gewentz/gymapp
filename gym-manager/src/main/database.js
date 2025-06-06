@@ -134,6 +134,8 @@ class Database {
 
   // Criar novo aluno
   createAluno(alunoData) {
+    const { dataMatricula } = alunoData
+    console.log('dataMatricula recebida:', dataMatricula)
     try {
       const {
         nome,
@@ -144,10 +146,12 @@ class Database {
         horariosTreino,
         status,
         corPadrao,
-        mensalidade
+        mensalidade,
+        dataMatricula // <-- adicionar aqui
       } = alunoData
 
-      const dataMatricula = getCurrentDateBrazil()
+      // Use a dataMatricula enviada, ou o dia atual se não vier
+      const dataMatriculaFinal = dataMatricula || getCurrentDateBrazil()
       const sql = `
         INSERT INTO alunos (
           nome, nascimento, telefone, email, diasTreino, horariosTreino,
@@ -162,7 +166,7 @@ class Database {
         JSON.stringify(diasTreino || []),
         JSON.stringify(horariosTreino || []),
         status || 'Ativo',
-        dataMatricula,
+        dataMatriculaFinal,
         corPadrao || '#4CAF50',
         parseFloat(mensalidade) || 0
       ]
@@ -172,7 +176,7 @@ class Database {
         id: info.lastInsertRowid,
         ...alunoData,
         mensalidade: parseFloat(mensalidade) || 0,
-        dataMatricula
+        dataMatricula: dataMatriculaFinal // <-- garantir retorno correto
       })
     } catch (err) {
       return Promise.reject(err)
@@ -191,14 +195,15 @@ class Database {
         horariosTreino,
         status,
         corPadrao,
-        mensalidade
+        mensalidade,
+        dataMatricula // <-- adicionar aqui
       } = alunoData
 
       const sql = `
         UPDATE alunos SET
           nome = ?, nascimento = ?, telefone = ?, email = ?,
           diasTreino = ?, horariosTreino = ?, status = ?,
-          corPadrao = ?, mensalidade = ?, updated_at = CURRENT_TIMESTAMP
+          corPadrao = ?, mensalidade = ?, dataMatricula = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
       `
       const params = [
@@ -211,13 +216,15 @@ class Database {
         status,
         corPadrao,
         parseFloat(mensalidade) || 0,
+        dataMatricula || getCurrentDateBrazil(), // <-- usar valor enviado
         id
       ]
       this.db.prepare(sql).run(...params)
       return Promise.resolve({
         id,
         ...alunoData,
-        mensalidade: parseFloat(mensalidade) || 0
+        mensalidade: parseFloat(mensalidade) || 0,
+        dataMatricula: dataMatricula // <-- garantir retorno correto
       })
     } catch (err) {
       return Promise.reject(err)
