@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
+import AlertModal from '../components/Alert'
 
 function Dashboard() {
+  const [alert, setAlert] = useState({ open: false, message: '', title: '' })
   const [dadosDashboard, setDadosDashboard] = useState({
     contasVencer: [],
     mensalidadesReceber: [],
@@ -44,7 +46,11 @@ function Dashboard() {
       setEstatisticasSemana(estatisticas)
     } catch (error) {
       console.error('Erro ao carregar dados do dashboard:', error)
-      alert('Erro ao carregar dados do dashboard')
+      setAlert({
+        open: true,
+        title: 'Erro ao carregar dados do dashboard',
+        message: 'Ocorreu um erro ao carregar os dados do dashboard. Por favor, tente novamente mais tarde.'
+      })
     } finally {
       setLoading(false)
     }
@@ -161,10 +167,18 @@ function Dashboard() {
   const handleBackup = async () => {
     try {
       await window.api.utils.backupDatabase()
-      alert('Backup realizado com sucesso na pasta Downloads!')
+      setAlert({
+        open: true,
+        title: 'Backup realizado com sucesso',
+        message: 'O backup do banco de dados foi realizado com sucesso!'
+      })
     } catch (error) {
       console.error('Erro ao fazer backup:', error)
-      alert('Erro ao fazer backup do banco de dados.')
+      setAlert({
+        open: true,
+        title: 'Erro ao fazer backup',
+        message: 'Ocorreu um erro ao fazer o backup do banco de dados. Por favor, tente novamente mais tarde.'
+      })
     }
   }
 
@@ -172,13 +186,26 @@ function Dashboard() {
     try {
       const result = await window.api.utils.importDatabase()
       if (result === true) {
-        alert('Banco de dados importado com sucesso! Reinicie a aplicação para ver as alterações.')
+        setAlert({
+          open: true,
+          title: 'Importação concluída',
+          message: 'O banco de dados foi importado com sucesso! Por favor, atualize a página.'
+        })
+        loadDashboardData() // Recarregar os dados após a importação
       } else if (result === false) {
-        alert('Importação cancelada.')
+        setAlert({
+          open: true,
+          title: 'Importação cancelada',
+          message: 'A importação do banco de dados foi cancelada pelo usuário.'
+        })
       }
     } catch (error) {
       console.error('Erro ao importar banco:', error)
-      alert('Erro ao importar banco de dados.')
+      setAlert({
+        open: true,
+        title: 'Erro ao importar banco',
+        message: 'Ocorreu um erro ao importar o banco de dados. Por favor, tente novamente mais tarde.'
+      })
     }
   }
 
@@ -476,6 +503,12 @@ function Dashboard() {
           </div>
         </div>
       </div>
+      <AlertModal
+        isOpen={alert.open}
+        onClose={() => setAlert({ ...alert, open: false })}
+        title={alert.title}
+        message={alert.message}
+      />
     </div>
   )
 }

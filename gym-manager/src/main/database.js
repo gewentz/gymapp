@@ -234,8 +234,13 @@ class Database {
   // Deletar aluno
   deleteAluno(id) {
     try {
-      const info = this.db.prepare('DELETE FROM alunos WHERE id = ?').run(id)
-      return Promise.resolve({ deletedId: id, changes: info.changes })
+      // Exclua os históricos do aluno primeiro
+      this.db.prepare('DELETE FROM historicos WHERE aluno_id = ?').run(id)
+      // Adicione aqui outras tabelas filhas, se necessário
+
+      // Agora exclua o aluno
+      this.db.prepare('DELETE FROM alunos WHERE id = ?').run(id)
+      return Promise.resolve()
     } catch (err) {
       return Promise.reject(err)
     }

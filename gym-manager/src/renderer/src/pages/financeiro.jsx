@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import Modal from '../components/Modal'
+import AlertModal from '../components/Alert'
 
 function Financeiro() {
+  const [alert, setAlert] = useState({ open: false, message: '', title: '' })
   const [transacoes, setTransacoes] = useState([])
   const [faturas, setFaturas] = useState([])
   const [alunos, setAlunos] = useState([])
@@ -87,9 +89,11 @@ function Financeiro() {
     } catch (error) {
       console.error('Erro ao carregar dados:', error)
 
-      alert(
-        'Erro ao carregar dados financeiros. Verifique se o aplicativo foi reiniciado após as alterações.'
-      )
+      setAlert({
+        open: true,
+        message: 'Erro ao carregar dados. Por favor, reinicie o aplicativo.',
+        title: 'Erro'
+      })
     } finally {
       setLoading(false)
     }
@@ -138,7 +142,11 @@ function Financeiro() {
       setItemToDelete(null)
     } catch (error) {
       console.error('Erro ao excluir item:', error)
-      alert('Erro ao excluir item')
+      setAlert({
+        open: true,
+        message: 'Erro ao excluir item. Por favor, tente novamente.',
+        title: 'Erro'
+      })
     }
   }
 
@@ -188,7 +196,11 @@ function Financeiro() {
 
   const handleSaveTransacao = async () => {
     if (!formTransacao.data || !formTransacao.descricao || !formTransacao.valor) {
-      alert('Preencha todos os campos obrigatórios')
+      setAlert({
+        open: true,
+        message: 'Por favor, preencha todos os campos obrigatórios.',
+        title: 'Campos Obrigatórios'
+      })
       return
     }
 
@@ -209,7 +221,11 @@ function Financeiro() {
       handleCancelTransacao()
     } catch (error) {
       console.error('Erro ao salvar transação:', error)
-      alert('Erro ao salvar transação')
+      setAlert({
+        open: true,
+        message: 'Erro ao salvar transação. Por favor, tente novamente.',
+        title: 'Erro'
+      })
     }
   }
 
@@ -237,7 +253,11 @@ function Financeiro() {
 
   const handleSaveFatura = async () => {
     if (!formFatura.descricao || !formFatura.valor || !formFatura.dataVencimento) {
-      alert('Preencha todos os campos obrigatórios')
+      setAlert({
+        open: true,
+        message: 'Por favor, preencha todos os campos obrigatórios.',
+        title: 'Campos Obrigatórios'
+      })
       return
     }
 
@@ -289,7 +309,11 @@ function Financeiro() {
       handleCancelFatura()
     } catch (error) {
       console.error('Erro ao salvar fatura:', error)
-      alert('Erro ao salvar fatura')
+      setAlert({
+        open: true,
+        message: 'Erro ao salvar fatura. Por favor, tente novamente.',
+        title: 'Erro'
+      })
     }
   }
 
@@ -315,7 +339,12 @@ function Financeiro() {
       await loadData()
     } catch (error) {
       console.error('Erro ao marcar conta como paga:', error)
-      alert('Erro ao marcar conta como paga')
+
+      setAlert({
+        open: true,
+        message: 'Erro ao marcar conta como paga. Por favor, tente novamente.',
+        title: 'Erro'
+      })
     }
   }
 
@@ -323,14 +352,26 @@ function Financeiro() {
     try {
       const faturasCriadas = await window.api.faturas.gerarMensalidades()
       if (faturasCriadas.length > 0) {
-        alert(`${faturasCriadas.length} faturas de mensalidade geradas com sucesso!`)
+        setAlert({
+          open: true,
+          message: `Mensalidades geradas com sucesso! ${faturasCriadas.length} fatura(s) criada(s).`,
+          title: 'Sucesso'
+        })
         await loadData()
       } else {
-        alert('Nenhuma nova fatura de mensalidade foi gerada.')
+        setAlert({
+          open: true,
+          message: 'Não há alunos para gerar mensalidades.',
+          title: 'Erro'
+        })
       }
     } catch (error) {
       console.error('Erro ao gerar mensalidades:', error)
-      alert('Erro ao gerar faturas de mensalidade')
+      setAlert({
+        open: true,
+        message: 'Erro ao gerar mensalidades. Por favor, tente novamente.',
+        title: 'Erro'
+      })
     }
   }
 
@@ -375,7 +416,11 @@ function Financeiro() {
     } else {
       // Segunda confirmação - verificar texto e executar
       if (confirmacaoZerar.textoDigitado !== confirmacaoZerar.textoConfirmacao) {
-        alert('Texto de confirmação incorreto!')
+        setAlert({
+          open: true,
+          message: 'Texto incorreto. Por favor, tente novamente.',
+          title: 'Erro'
+        })
         return
       }
 
@@ -383,15 +428,27 @@ function Financeiro() {
         switch (confirmacaoZerar.tipo) {
           case 'tudo':
             await Promise.all([window.api.transacoes.deleteAll(), window.api.faturas.deleteAll()])
-            alert('Todos os dados financeiros foram zerados!')
+            setAlert({
+              open: true,
+              message: 'Dados financeiros zerados com sucesso!',
+              title: 'Sucesso'
+            })
             break
           case 'transacoes':
             await window.api.transacoes.deleteAll()
-            alert('Fluxo de caixa zerado!')
+            setAlert({
+              open: true,
+              message: 'Fluxo de caixa zerado com sucesso!',
+              title: 'Sucesso'
+            })
             break
           case 'faturas':
             await window.api.faturas.deleteAll()
-            alert('Faturas zeradas!')
+            setAlert({
+              open: true,
+              message: 'Faturas zeradas com sucesso!',
+              title: 'Sucesso'
+            })
             break
         }
 
@@ -399,7 +456,11 @@ function Financeiro() {
         handleCancelZerar()
       } catch (error) {
         console.error('Erro ao zerar dados:', error)
-        alert('Erro ao zerar dados!')
+        setAlert({
+          open: true,
+          message: 'Erro ao zerar dados. Por favor, tente novamente.',
+          title: 'Erro'
+        })
       }
     }
   }
@@ -577,7 +638,11 @@ function Financeiro() {
                           title="Excluir"
                         >
                           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9zM4 5a2 2 0 012-2h8a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 102 0v3a1 1 0 11-2 0V9zm4 0a1 1 0 10-2 0v3a1 1 0 102 0V9z" clipRule="evenodd" />
+                            <path
+                              fillRule="evenodd"
+                              d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9zM4 5a2 2 0 012-2h8a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 102 0v3a1 1 0 11-2 0V9zm4 0a1 1 0 10-2 0v3a1 1 0 102 0V9z"
+                              clipRule="evenodd"
+                            />
                           </svg>
                         </button>
                       </div>
@@ -608,7 +673,10 @@ function Financeiro() {
                 {faturas
                   .sort((a, b) => new Date(a.dataVencimento) - new Date(b.dataVencimento))
                   .map((fatura) => (
-                    <div key={fatura.id} className="bg-stone-600 rounded-lg p-3 group hover:bg-stone-500 transition-colors">
+                    <div
+                      key={fatura.id}
+                      className="bg-stone-600 rounded-lg p-3 group hover:bg-stone-500 transition-colors"
+                    >
                       <div className="flex justify-between items-start mb-2">
                         <h4 className="font-semibold text-white">{fatura.descricao}</h4>
                         <div className="flex items-center gap-2">
@@ -638,7 +706,11 @@ function Financeiro() {
                               title="Excluir"
                             >
                               <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9zM4 5a2 2 0 012-2h8a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 102 0v3a1 1 0 11-2 0V9zm4 0a1 1 0 10-2 0v3a1 1 0 102 0V9z" clipRule="evenodd" />
+                                <path
+                                  fillRule="evenodd"
+                                  d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9zM4 5a2 2 0 012-2h8a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 102 0v3a1 1 0 11-2 0V9zm4 0a1 1 0 10-2 0v3a1 1 0 102 0V9z"
+                                  clipRule="evenodd"
+                                />
                               </svg>
                             </button>
                           </div>
@@ -708,7 +780,7 @@ function Financeiro() {
       <Modal
         isOpen={isModalTransacaoOpen}
         onClose={handleCancelTransacao}
-        title={editingTransacao ? "Editar Transação" : "Nova Transação"}
+        title={editingTransacao ? 'Editar Transação' : 'Nova Transação'}
         size="md"
         footer={
           <>
@@ -716,7 +788,7 @@ function Financeiro() {
               Cancelar
             </Modal.Button>
             <Modal.Button variant="primary" onClick={handleSaveTransacao}>
-              {editingTransacao ? "Atualizar" : "Salvar"}
+              {editingTransacao ? 'Atualizar' : 'Salvar'}
             </Modal.Button>
           </>
         }
@@ -816,7 +888,7 @@ function Financeiro() {
       <Modal
         isOpen={isModalFaturaOpen}
         onClose={handleCancelFatura}
-        title={editingFatura ? "Editar Fatura" : "Nova Fatura"}
+        title={editingFatura ? 'Editar Fatura' : 'Nova Fatura'}
         size="lg"
         footer={
           <>
@@ -824,7 +896,7 @@ function Financeiro() {
               Cancelar
             </Modal.Button>
             <Modal.Button variant="primary" onClick={handleSaveFatura}>
-              {editingFatura ? "Atualizar" : "Salvar"}
+              {editingFatura ? 'Atualizar' : 'Salvar'}
             </Modal.Button>
           </>
         }
@@ -861,7 +933,7 @@ function Financeiro() {
 
             <div>
               <label className="block text-sm font-medium text-stone-700 mb-1">
-                Data do {editingFatura ? "Vencimento" : "Primeiro Vencimento"} *
+                Data do {editingFatura ? 'Vencimento' : 'Primeiro Vencimento'} *
               </label>
               <input
                 type="date"
@@ -1028,15 +1100,14 @@ function Financeiro() {
               </p>
               <p className="text-stone-600">{itemToDelete.item.descricao}</p>
               <p className="text-stone-600">
-                Valor: {new Intl.NumberFormat('pt-BR', {
+                Valor:{' '}
+                {new Intl.NumberFormat('pt-BR', {
                   style: 'currency',
                   currency: 'BRL'
                 }).format(itemToDelete.item.valor)}
               </p>
               {itemToDelete.type === 'transacao' && (
-                <p className="text-stone-600">
-                  Data: {formatDateBR(itemToDelete.item.data)}
-                </p>
+                <p className="text-stone-600">Data: {formatDateBR(itemToDelete.item.data)}</p>
               )}
               {itemToDelete.type === 'fatura' && (
                 <p className="text-stone-600">
@@ -1046,9 +1117,7 @@ function Financeiro() {
             </div>
           )}
 
-          <p className="text-stone-600 text-sm">
-            Esta ação não pode ser desfeita.
-          </p>
+          <p className="text-stone-600 text-sm">Esta ação não pode ser desfeita.</p>
         </div>
       </Modal>
 
@@ -1169,6 +1238,12 @@ function Financeiro() {
           )}
         </div>
       </Modal>
+      <AlertModal
+        isOpen={alert.open}
+        onClose={() => setAlert({ ...alert, open: false })}
+        title={alert.title}
+        message={alert.message}
+      />
     </div>
   )
 }

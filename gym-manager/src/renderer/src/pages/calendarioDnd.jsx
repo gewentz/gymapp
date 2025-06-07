@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
+import AlertModal from '../components/Alert'
 
 function CalendarioDnd() {
+  const [alert, setAlert] = useState({ open: false, message: '', title: '' })
   const [alunos, setAlunos] = useState([])
   const [loading, setLoading] = useState(true)
   const [draggedItem, setDraggedItem] = useState(null)
@@ -16,7 +18,11 @@ function CalendarioDnd() {
       setAlunos(alunosData)
     } catch (error) {
       console.error('Erro ao carregar alunos:', error)
-      alert('Erro ao carregar dados dos alunos')
+      setAlert({
+        open: true,
+        title: 'Erro ao Carregar Alunos',
+        message: 'Ocorreu um erro ao carregar os alunos. Tente novamente.'
+      })
     } finally {
       setLoading(false)
     }
@@ -51,12 +57,12 @@ function CalendarioDnd() {
   const getAgendamentosPorSlot = (dia, horario) => {
     const agendamentos = []
 
-    alunos.forEach(aluno => {
+    alunos.forEach((aluno) => {
       if (aluno.status === 'Ativo' && aluno.diasTreino && aluno.horariosTreino) {
         // Verificar se o aluno treina neste dia
         if (aluno.diasTreino.includes(dia)) {
           // Encontrar o horário para este dia
-          const horarioTreino = aluno.horariosTreino.find(h => h.dia === dia)
+          const horarioTreino = aluno.horariosTreino.find((h) => h.dia === dia)
           if (horarioTreino && horarioTreino.horario === horario) {
             agendamentos.push({
               id: `${aluno.id}-${dia}-${horario}`,
@@ -99,16 +105,20 @@ function CalendarioDnd() {
 
     try {
       // Encontrar o aluno
-      const aluno = alunos.find(a => a.id === draggedItem.alunoId)
+      const aluno = alunos.find((a) => a.id === draggedItem.alunoId)
       if (!aluno) return
 
       // Verificar se o aluno já tem agendamento neste horário/dia
-      const jaTemAgendamento = aluno.horariosTreino.some(h =>
-        h.dia === novoDia && h.horario === novoHorario
+      const jaTemAgendamento = aluno.horariosTreino.some(
+        (h) => h.dia === novoDia && h.horario === novoHorario
       )
 
       if (jaTemAgendamento) {
-        alert('Este aluno já possui agendamento neste horário!')
+        setAlert({
+          open: true,
+          title: 'Horário Já Ocupado',
+          message: `O aluno ${aluno.nome} já possui agendamento no dia ${novoDia} às ${novoHorario}.`
+        })
         setDraggedItem(null)
         return
       }
@@ -118,8 +128,8 @@ function CalendarioDnd() {
       let novosHorariosTreino = [...aluno.horariosTreino]
 
       // Encontrar o índice do horário que está sendo movido
-      const indiceHorarioAntigo = novosHorariosTreino.findIndex(h =>
-        h.dia === draggedItem.dia && h.horario === draggedItem.horario
+      const indiceHorarioAntigo = novosHorariosTreino.findIndex(
+        (h) => h.dia === draggedItem.dia && h.horario === draggedItem.horario
       )
 
       if (indiceHorarioAntigo !== -1) {
@@ -127,11 +137,13 @@ function CalendarioDnd() {
         novosHorariosTreino.splice(indiceHorarioAntigo, 1)
 
         // Verificar se ainda há outros horários para o dia antigo
-        const temOutrosHorariosNoDiaAntigo = novosHorariosTreino.some(h => h.dia === draggedItem.dia)
+        const temOutrosHorariosNoDiaAntigo = novosHorariosTreino.some(
+          (h) => h.dia === draggedItem.dia
+        )
 
         // Se não há mais horários no dia antigo, remover o dia da lista
         if (!temOutrosHorariosNoDiaAntigo) {
-          novosDiasTreino = novosDiasTreino.filter(dia => dia !== draggedItem.dia)
+          novosDiasTreino = novosDiasTreino.filter((dia) => dia !== draggedItem.dia)
         }
 
         // Adicionar o novo horário
@@ -156,24 +168,26 @@ function CalendarioDnd() {
         await window.api.alunos.update(aluno.id, alunoAtualizado)
 
         // Atualizar o estado local imediatamente
-        setAlunos(prevAlunos =>
-          prevAlunos.map(a =>
-            a.id === aluno.id ? alunoAtualizado : a
-          )
-        )
+        setAlunos((prevAlunos) => prevAlunos.map((a) => (a.id === aluno.id ? alunoAtualizado : a)))
 
         // Forçar recarregamento dos dados do banco para garantir sincronização
         setTimeout(async () => {
           await loadAlunos()
         }, 100)
 
-        console.log(`Horário movido: ${draggedItem.dia} ${draggedItem.horario} -> ${novoDia} ${novoHorario}`)
+        console.log(
+          `Horário movido: ${draggedItem.dia} ${draggedItem.horario} -> ${novoDia} ${novoHorario}`
+        )
         console.log('Dias de treino atualizados:', novosDiasTreino)
         console.log('Horários de treino atualizados:', novosHorariosTreino)
       }
     } catch (error) {
       console.error('Erro ao atualizar horário:', error)
-      alert('Erro ao atualizar horário. Tente novamente.')
+      setAlert({
+        open: true,
+        title: 'Erro ao Atualizar Horário',
+        message: 'Ocorreu um erro ao atualizar o horário. Tente novamente.'
+      })
       // Em caso de erro, recarregar os dados originais
       await loadAlunos()
     }
@@ -211,16 +225,20 @@ function CalendarioDnd() {
     if (!selectedCell || !alunoId) return
 
     try {
-      const aluno = alunos.find(a => a.id === parseInt(alunoId))
+      const aluno = alunos.find((a) => a.id === parseInt(alunoId))
       if (!aluno) return
 
       // Verificar se o aluno já tem agendamento neste horário/dia
-      const jaTemAgendamento = aluno.horariosTreino.some(h =>
-        h.dia === selectedCell.dia && h.horario === selectedCell.horario
+      const jaTemAgendamento = aluno.horariosTreino.some(
+        (h) => h.dia === selectedCell.dia && h.horario === selectedCell.horario
       )
 
       if (jaTemAgendamento) {
-        alert('Este aluno já possui agendamento neste horário!')
+        setAlert({
+          open: true,
+          title: 'Horário Já Ocupado',
+          message: `O aluno ${aluno.nome} já possui agendamento no dia ${selectedCell.dia} às ${selectedCell.horario}.`
+        })
         return
       }
 
@@ -250,22 +268,25 @@ function CalendarioDnd() {
       await window.api.alunos.update(aluno.id, alunoAtualizado)
 
       // Atualizar o estado local imediatamente
-      setAlunos(prevAlunos =>
-        prevAlunos.map(a =>
-          a.id === aluno.id ? alunoAtualizado : a
-        )
-      )
+      setAlunos((prevAlunos) => prevAlunos.map((a) => (a.id === aluno.id ? alunoAtualizado : a)))
 
       // Fechar modal
       setShowAddModal(false)
       setSelectedCell(null)
 
-      alert('Horário adicionado com sucesso!')
-
+      setAlert({
+        open: true,
+        title: 'Horário Adicionado',
+        message: `Horário ${selectedCell.horario} no dia ${selectedCell.dia} adicionado para ${aluno.nome}.`
+      })
       console.log(`Horário adicionado: ${aluno.nome} - ${selectedCell.dia} ${selectedCell.horario}`)
     } catch (error) {
       console.error('Erro ao adicionar horário:', error)
-      alert('Erro ao adicionar horário. Tente novamente.')
+      setAlert({
+        open: true,
+        title: 'Erro ao Adicionar Horário',
+        message: 'Ocorreu um erro ao adicionar o horário. Tente novamente.'
+      })
     }
   }
 
@@ -308,18 +329,22 @@ function CalendarioDnd() {
         <div className="mb-4 p-3 bg-stone-600 rounded-lg">
           <p className="text-sm text-gray-300 mb-2">
             <strong>Instruções:</strong> Arraste e solte os agendamentos para reorganizar os
-            horários. Clique no botão "+" para adicionar novos horários. Os dados são salvos automaticamente no banco de dados.
+            horários. Clique no botão "+" para adicionar novos horários. Os dados são salvos
+            automaticamente no banco de dados.
           </p>
           <div className="flex flex-wrap gap-2 text-xs">
-            {alunos.filter(a => a.status === 'Ativo').slice(0, 6).map(aluno => (
-              <span
-                key={aluno.id}
-                className="px-2 py-1 rounded text-white"
-                style={{ backgroundColor: aluno.corPadrao || '#4CAF50' }}
-              >
-                {aluno.nome}
-              </span>
-            ))}
+            {alunos
+              .filter((a) => a.status === 'Ativo')
+              .slice(0, 6)
+              .map((aluno) => (
+                <span
+                  key={aluno.id}
+                  className="px-2 py-1 rounded text-white"
+                  style={{ backgroundColor: aluno.corPadrao || '#4CAF50' }}
+                >
+                  {aluno.nome}
+                </span>
+              ))}
           </div>
         </div>
 
@@ -417,10 +442,10 @@ function CalendarioDnd() {
         <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4">
           {diasSemana.map((dia) => {
             const agendamentosDia = []
-            alunos.forEach(aluno => {
+            alunos.forEach((aluno) => {
               if (aluno.status === 'Ativo' && aluno.diasTreino && aluno.horariosTreino) {
                 if (aluno.diasTreino.includes(dia.key)) {
-                  const horarioTreino = aluno.horariosTreino.find(h => h.dia === dia.key)
+                  const horarioTreino = aluno.horariosTreino.find((h) => h.dia === dia.key)
                   if (horarioTreino) {
                     agendamentosDia.push({
                       nome: aluno.nome,
@@ -465,13 +490,12 @@ function CalendarioDnd() {
       {showAddModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-96 max-w-90vw">
-            <h3 className="text-lg font-bold text-gray-800 mb-4">
-              Adicionar Aluno ao Horário
-            </h3>
+            <h3 className="text-lg font-bold text-gray-800 mb-4">Adicionar Aluno ao Horário</h3>
 
             {selectedCell && (
               <p className="text-gray-600 mb-4">
-                Dia: <strong>{diasSemana.find(d => d.key === selectedCell.dia)?.label}</strong><br/>
+                Dia: <strong>{diasSemana.find((d) => d.key === selectedCell.dia)?.label}</strong>
+                <br />
                 Horário: <strong>{selectedCell.horario}</strong>
               </p>
             )}
@@ -487,13 +511,12 @@ function CalendarioDnd() {
               >
                 <option value="">Selecione um aluno...</option>
                 {alunos
-                  .filter(aluno => aluno.status === 'Ativo')
-                  .map(aluno => (
+                  .filter((aluno) => aluno.status === 'Ativo')
+                  .map((aluno) => (
                     <option key={aluno.id} value={aluno.id}>
                       {aluno.nome}
                     </option>
-                  ))
-                }
+                  ))}
               </select>
             </div>
 
@@ -510,7 +533,11 @@ function CalendarioDnd() {
                   if (alunoId) {
                     handleConfirmAddHorario(alunoId)
                   } else {
-                    alert('Por favor, selecione um aluno.')
+                    setAlert({
+                      open: true,
+                      title: 'Seleção Inválida',
+                      message: 'Por favor, selecione um aluno para adicionar ao horário.'
+                    })
                   }
                 }}
                 className="px-4 py-2 bg-lime-600 text-white rounded-md hover:bg-lime-700 transition-colors"
@@ -521,6 +548,12 @@ function CalendarioDnd() {
           </div>
         </div>
       )}
+      <AlertModal
+        isOpen={alert.open}
+        onClose={() => setAlert({ ...alert, open: false })}
+        title={alert.title}
+        message={alert.message}
+      />
     </div>
   )
 }

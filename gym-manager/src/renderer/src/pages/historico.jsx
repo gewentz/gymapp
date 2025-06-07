@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import Modal from '../components/Modal'
+import AlertModal from '../components/Alert'
 
 function Historico() {
+  const [alert, setAlert] = useState({ open: false, message: '', title: '' })
   const [alunos, setAlunos] = useState([])
   const [historicos, setHistoricos] = useState([])
   const [loading, setLoading] = useState(true)
@@ -36,7 +38,11 @@ function Historico() {
       setHistoricos(historicosData)
     } catch (error) {
       console.error('Erro ao carregar dados:', error)
-      alert('Erro ao carregar dados')
+      setAlert({
+        open: true,
+        message: 'Erro ao carregar dados. Por favor, reinicie o aplicativo.',
+        title: 'Erro'
+      })
     } finally {
       setLoading(false)
     }
@@ -122,12 +128,20 @@ function Historico() {
 
   const handleSalvarRegistro = async () => {
     if (!formData.data || !formData.peso || !formData.treinoAtual) {
-      alert('Preencha todos os campos obrigatórios')
+      setAlert({
+        open: true,
+        message: 'Preencha todos os campos obrigatórios.',
+        title: 'Erro'
+      })
       return
     }
 
     if (!alunoSelecionado) {
-      alert('Selecione um aluno primeiro')
+      setAlert({
+        open: true,
+        message: 'Selecione um aluno antes de salvar.',
+        title: 'Erro'
+      })
       return
     }
 
@@ -143,11 +157,19 @@ function Historico() {
       if (editingRegistro) {
         // Editando registro existente
         await window.api.historicos.update(editingRegistro.id, historicoData)
-        alert('Registro atualizado com sucesso!')
+        setAlert({
+          open: true,
+          message: 'Registro atualizado com sucesso!',
+          title: 'Sucesso'
+        })
       } else {
         // Novo registro
         await window.api.historicos.create(historicoData)
-        alert('Registro criado com sucesso!')
+        setAlert({
+          open: true,
+          message: 'Registro criado com sucesso!',
+          title: 'Sucesso'
+        })
       }
 
       // Recarregar dados
@@ -155,7 +177,11 @@ function Historico() {
       handleCancelar()
     } catch (error) {
       console.error('Erro ao salvar registro:', error)
-      alert('Erro ao salvar registro. Tente novamente.')
+      setAlert({
+        open: true,
+        message: 'Erro ao salvar registro. Tente novamente.',
+        title: 'Erro'
+      })
     }
   }
 
@@ -163,11 +189,19 @@ function Historico() {
     if (window.confirm('Tem certeza que deseja excluir este registro?')) {
       try {
         await window.api.historicos.delete(registro.id)
-        alert('Registro excluído com sucesso!')
+        setAlert({
+          open: true,
+          message: 'Registro excluído com sucesso!',
+          title: 'Sucesso'
+        })
         await loadData()
       } catch (error) {
         console.error('Erro ao excluir registro:', error)
-        alert('Erro ao excluir registro. Tente novamente.')
+        setAlert({
+          open: true,
+          message: 'Erro ao excluir registro. Tente novamente.',
+          title: 'Erro'
+        })
       }
     }
   }
@@ -304,7 +338,9 @@ function Historico() {
                             <div className="flex justify-between items-start mb-3">
                               <div>
                                 <h3 className="text-lg font-semibold text-white">
-                                  {new Date(registro.data + 'T00:00:00').toLocaleDateString('pt-BR')}
+                                  {new Date(registro.data + 'T00:00:00').toLocaleDateString(
+                                    'pt-BR'
+                                  )}
                                 </h3>
                                 <div className="flex items-center gap-4 mt-2">
                                   <span className="text-2xl font-bold text-lime-400">
@@ -516,6 +552,12 @@ function Historico() {
           </div>
         </div>
       )}
+      <AlertModal
+        isOpen={alert.open}
+        onClose={() => setAlert({ ...alert, open: false })}
+        title={alert.title}
+        message={alert.message}
+      />
     </div>
   )
 }

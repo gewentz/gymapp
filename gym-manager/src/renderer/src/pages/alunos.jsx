@@ -1,14 +1,18 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import Card from '../components/Card'
 import Modal from '../components/Modal'
+import AlertModal from '../components/Alert'
 
 function Alunos() {
+  const [alert, setAlert] = useState({ open: false, message: '', title: '' })
   const [alunos, setAlunos] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('Todos')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingAluno, setEditingAluno] = useState(null)
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [alunoToDelete, setAlunoToDelete] = useState(null)
   const nomeInputRef = useRef(null)
 
   // Estado do formulário
@@ -33,7 +37,11 @@ function Alunos() {
       setAlunos(alunosData)
     } catch (error) {
       console.error('Erro ao carregar alunos:', error)
-      alert('Erro ao carregar dados dos alunos')
+      setAlert({
+        open: true,
+        message: 'Erro ao carregar alunos. Tente novamente mais tarde.',
+        title: 'Erro'
+      })
     } finally {
       setLoading(false)
     }
@@ -185,13 +193,21 @@ function Alunos() {
       !formData.nascimento ||
       !formData.mensalidade
     ) {
-      alert('Por favor, preencha todos os campos obrigatórios.')
+      setAlert({
+        open: true,
+        message: 'Por favor, preencha todos os campos obrigatórios.',
+        title: 'Campos Obrigatórios'
+      })
       return
     }
 
     const mensalidadeNum = parseFloat(formData.mensalidade)
     if (isNaN(mensalidadeNum) || mensalidadeNum <= 0) {
-      alert('Por favor, insira um valor válido para a mensalidade.')
+      setAlert({
+        open: true,
+        message: 'Por favor, insira um valor válido para a mensalidade.',
+        title: 'Valor Inválido'
+      })
       return
     }
 
@@ -208,7 +224,11 @@ function Alunos() {
         }
 
         await window.api.alunos.update(editingAluno.id, alunoAtualizado)
-        alert('Aluno atualizado com sucesso!')
+        setAlert({
+          open: true,
+          message: 'Aluno atualizado com sucesso!',
+          title: 'Sucesso'
+        })
       } else {
         // Criar novo aluno
         const novoAluno = {
@@ -218,7 +238,11 @@ function Alunos() {
         }
 
         await window.api.alunos.create(novoAluno)
-        alert('Aluno cadastrado com sucesso!')
+        setAlert({
+          open: true,
+          message: 'Aluno criado com sucesso!',
+          title: 'Sucesso'
+        })
       }
 
       // Recarregar lista de alunos
@@ -227,25 +251,56 @@ function Alunos() {
     } catch (error) {
       console.error('Erro ao salvar aluno:', error)
       if (error.message.includes('UNIQUE constraint failed')) {
-        alert('Este email já está cadastrado para outro aluno.')
+        setAlert({
+          open: true,
+          message: 'Já existe um aluno com esse nome ou email.',
+          title: 'Erro'
+        })
       } else {
-        alert('Erro ao salvar aluno. Tente novamente.')
+        setAlert({
+          open: true,
+          message: 'Erro ao salvar aluno. Tente novamente.',
+          title: 'Erro'
+        })
       }
     }
   }
 
-  // Função para deletar aluno
-  const handleDeleteAluno = async (aluno) => {
-    if (window.confirm(`Tem certeza que deseja excluir o aluno ${aluno.nome}?`)) {
-      try {
-        await window.api.alunos.delete(aluno.id)
-        alert('Aluno excluído com sucesso!')
-        await loadAlunos()
-      } catch (error) {
-        console.error('Erro ao excluir aluno:', error)
-        alert('Erro ao excluir aluno. Tente novamente.')
-      }
+  // Função para abrir modal de confirmação de exclusão
+  const handleDeleteAluno = (aluno) => {
+    setAlunoToDelete(aluno)
+    setShowConfirmModal(true)
+  }
+
+  // Função para confirmar a exclusão
+  const confirmDelete = async () => {
+    if (!alunoToDelete) return
+
+    try {
+      await window.api.alunos.delete(alunoToDelete.id)
+      setAlert({
+        open: true,
+        message: 'Aluno excluído com sucesso!',
+        title: 'Sucesso'
+      })
+      await loadAlunos()
+    } catch (error) {
+      console.error('Erro ao excluir aluno:', error)
+      setAlert({
+        open: true,
+        message: 'Erro ao excluir aluno. Tente novamente.',
+        title: 'Erro'
+      })
+    } finally {
+      setShowConfirmModal(false)
+      setAlunoToDelete(null)
     }
+  }
+
+  // Função para cancelar a exclusão
+  const cancelDelete = () => {
+    setShowConfirmModal(false)
+    setAlunoToDelete(null)
   }
 
   // Função para cancelar
@@ -264,8 +319,6 @@ function Alunos() {
     setEditingAluno(null)
     setIsModalOpen(false)
   }, [])
-
-
 
   if (loading) {
     return (
@@ -586,6 +639,60 @@ function Alunos() {
           <div className="text-sm text-stone-500 mt-4">* Campos obrigatórios</div>
         </div>
       </Modal>
+
+      {/* Modal de Confirmação usando o componente Modal */}
+      <Modal
+        isOpen={showConfirmModal}
+        onClose={cancelDelete}
+        title="Confirmar Exclusão"
+        size="sm"
+        footer={
+          <>
+            <Modal.Button variant="outline" onClick={cancelDelete}>
+              Cancelar
+            </Modal.Button>
+            <Modal.Button variant="danger" onClick={confirmDelete}>
+              Sim, Excluir
+            </Modal.Button>
+          </>
+        }
+      >
+        <div className="text-center py-4">
+          <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+            <svg
+              className="h-6 w-6 text-red-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+              />
+            </svg>
+          </div>
+
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Excluir Aluno</h3>
+
+          <p className="text-sm text-gray-500 mb-4">
+            Tem certeza que deseja excluir o aluno{' '}
+            <span className="font-semibold text-gray-900">{alunoToDelete?.nome}</span>?
+          </p>
+
+          <p className="text-xs text-red-600 bg-red-50 p-2 rounded">
+            ⚠️ Esta ação não pode ser desfeita.
+          </p>
+        </div>
+      </Modal>
+
+      <AlertModal
+        isOpen={alert.open}
+        onClose={() => setAlert({ ...alert, open: false })}
+        title={alert.title}
+        message={alert.message}
+      />
     </div>
   )
 }
