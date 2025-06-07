@@ -1,43 +1,42 @@
-appId: com.gewentz.gymmanager
-productName: Ricardo Alves - Personal Trainer
+appId: com.gewentz.ra-gymmanager
+productName: RicardoAlvesPersonalTrainer
 directories:
-  buildResources: build
+  output: dist
 files:
-  - '!**/.vscode/*'
-  - '!src/*'
-  - '!electron.vite.config.{js,ts,mjs,cjs}'
-  - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
-  - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
-asarUnpack:
-  - resources/**
-win:
-  icon: build/icon.ico
-  executableName: RicardoAlvesPersonalTrainer
+  - "!**/.vscode/*"
+  - "!src/*"
+  - "!electron.vite.config.{js,ts,mjs,cjs}"
+  - "!{.eslintignore,.eslintrc.cjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}"
+  - "!{.env,.env.*,.npmrc,pnpm-lock.yaml}"
+  - "!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}"
 nsis:
-  artifactName: ${name}-${version}-setup.${ext}
-  shortcutName: Ricardo Alves - Personal Trainer
-  uninstallDisplayName: Ricardo Alves - Personal Trainer
-  createDesktopShortcut: always
   oneClick: false
   allowToChangeInstallationDirectory: true
-  runAfterFinish: false
-  installerHeader: build/installerBanner.bmp
-  license: build/license.txt
+mac:
+  entitlementsInherit: build/entitlements.mac.plist
+  extendInfo:
+    - NSCameraUsageDescription: Application requests access to device's camera.
+    - NSMicrophoneUsageDescription: Application requests access to device's microphone.
+    - NSDocumentsFolderUsageDescription: Application requests access to user's Documents folder.
+    - NSDownloadsFolderUsageDescription: Application requests access to user's Downloads folder.
 linux:
-  icon: build/icon.png
   target:
-    - AppImage
-    - snap
-    - deb
-  maintainer: electronjs.org
-  category: Utility
-appImage:
-  artifactName: ${name}-${version}.${ext}
-npmRebuild: false
+    - target: AppImage
+      arch:
+        - x64
+    - target: deb
+      arch:
+        - x64
+  category: Office
+  maintainer: Gabriel Wentz <gabrielfwtz@gmail.com>
+  description: App de gestão de academia desenvolvido por Gabriel Wentz
+  synopsis: Aplicativo para gerenciamento de academia
+  desktop:
+    entry:
+      Name: Ricardo Alves Personal Trainer
+      Comment: App de gestão de academia
+      Categories: Office;
 publish:
   provider: github
   owner: gewentz
   repo: gymapp
-  releaseType: release
-electronDownload:
-  mirror: https://npmmirror.com/mirrors/electron/

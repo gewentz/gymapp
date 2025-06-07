@@ -1,6 +1,6 @@
 {
   "name": "ra-gymmanager-by-gewentz",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "App de gestão de academia, desenvolvido por Gabriel Wentz @gewentz.",
   "license": "MIT",
   "main": "./out/main/index.js",
