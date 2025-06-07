@@ -234,12 +234,22 @@ class Database {
   // Deletar aluno
   deleteAluno(id) {
     try {
-      // Exclua os históricos do aluno primeiro
-      this.db.prepare('DELETE FROM historicos WHERE aluno_id = ?').run(id)
-      // Adicione aqui outras tabelas filhas, se necessário
+      // Use a transaction to ensure all deletions succeed or fail together
+      const deleteTransaction = this.db.transaction(() => {
+        // Delete all related records first (in order of dependencies)
+        this.db.prepare('DELETE FROM historicos WHERE aluno_id = ?').run(id)
+        this.db.prepare('DELETE FROM transacoes WHERE aluno_id = ?').run(id)
+        this.db.prepare('DELETE FROM faturas WHERE aluno_id = ?').run(id)
 
-      // Agora exclua o aluno
-      this.db.prepare('DELETE FROM alunos WHERE id = ?').run(id)
+        // Finally delete the aluno
+        const result = this.db.prepare('DELETE FROM alunos WHERE id = ?').run(id)
+
+        if (result.changes === 0) {
+          throw new Error('Aluno não encontrado')
+        }
+      })
+
+      deleteTransaction()
       return Promise.resolve()
     } catch (err) {
       return Promise.reject(err)
